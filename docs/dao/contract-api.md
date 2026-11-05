@@ -1,6 +1,6 @@
 # Contributor DAO contract API (prototype, testnet only)
 
-Crate `rascals-contributor-dao`, NEAR SDK 5.29.1. Amounts are JSON decimal strings (`U128`), timestamps/durations are integer nanoseconds (`u64`). Every write below except `new`, `ft_on_transfer`, `fund_compute`, and private callbacks requires exactly 1 yoctoNEAR. Mainnet contract/token/member/agent/beneficiary accounts are refused. Deployed November 4 to `v2.rascals-dao-1104.testnet`; see testnet-deployment-2026-11-04.md.
+Crate `rascals-contributor-dao`, NEAR SDK 5.29.1. Amounts are JSON decimal strings (`U128`), timestamps/durations are integer nanoseconds (`u64`). Every write below except `new`, `ft_on_transfer`, `fund_compute`, and private callbacks requires exactly 1 yoctoNEAR. Mainnet contract/token/member/agent/beneficiary accounts are refused. Deployed November 4 to `v2.rascals-dao-1104.testnet`; see [NEAR testnet](testnet.md).
 
 ## Initialization
 
@@ -108,7 +108,7 @@ Proposal includes `id,proposer,description,action,created_at_ns,voting_ends_at_n
 }
 ```
 
-`secrets_ref` is optional and contains only a nonsecret encrypted-profile locator; raw credentials are never allowed in this schema. The private repository requires the owner to register a GitHub read-only secret profile with OutLayer separately. This prototype does not provision or publish that secret.
+`secrets_ref` is optional and contains only a nonsecret encrypted-profile locator; raw credentials are never allowed in this schema. Restricted repositories require a separately configured read-only secret profile. Credentials are never part of the job input.
 
 - `fund_compute({})` accepts a positive native NEAR attached deposit into a separate compute allocation ledger.
 - `execute_outlayer({job_id})` is a council write with one yoctoNEAR and up to 300Tgas. It dispatches **once per job**, using the snapshotted source URL/hash, WASI Preview2 target and secret-profile locator. It reserves `max_deposit` from funded native compute allocation before the call to `outlayer.testnet.request_execution`.

@@ -6,9 +6,9 @@ A memecoin discovery arcade and NEAR testnet Contributor DAO. Set a screened tok
 
 1. Open https://therascals.fun and try a free reveal. Review the token and market view; no deposit is needed.
 2. Open https://therascals.fun/#dao in the same page. Programs shows the funded NEAR testnet review program. Reviews shows finalized job #1, its merge SHA, score, challenge outcome and paid status.
-3. Inspect the contributor/agent payout transactions in [testnet acceptance evidence](docs/dao/reward-test-2026-11-04.md). These are test tokens with no monetary value.
+3. Inspect the deployed accounts and public transaction links in [NEAR testnet](docs/dao/testnet.md). Test tokens have no monetary value.
 
-The DAO contract is `v2.rascals-dao-1104.testnet`. Council votes authorize an exact merged PR and beneficiary. A trusted deterministic worker scores the contribution, binds an evidence digest to the exact work, and submits the result. Challenge rules gate claims. NEAR enforces treasury reservations, contributor claims and agent service fees. This is a custom NEAR contract, not a SputnikDAO/Trezu deployment.
+The DAO contract is `v2.rascals-dao-1104.testnet`. Council votes authorize an exact merged PR and beneficiary. A trusted deterministic worker scores the contribution, binds an evidence digest to the exact work, and submits the result. Challenge rules gate claims. NEAR enforces treasury reservations, contributor claims and agent service fees. The DAO uses a custom NEAR contract.
 
 Confidential quote access and funded mainnet trading acceptance remain incomplete. Hosted OutLayer execution, NEAR AI inference, an automatic merge watcher and a protocol-token economy are not active. Do not fund an unaccepted route based on this README. The current DAO is a governed testnet prototype; connecting a wallet does not grant council membership or payout rights.
 
@@ -36,7 +36,7 @@ pnpm dao:release
 pnpm dao:serve
 ```
 
-Open http://127.0.0.1:4321/dao/. It reads the deployed testnet contract. Connect an owner-controlled testnet wallet only when you intend to approve an action. The separate historical local model is not the deployed DAO and is excluded from public release bundles.
+Open http://127.0.0.1:4321/dao/. It reads the deployed testnet contract. Connect an owner-controlled testnet wallet only when you intend to approve an action.
 
 ## Verify
 
@@ -47,7 +47,7 @@ pnpm dao:release
 cargo test --workspace --locked
 ```
 
-File parallelism is disabled in this example to avoid resource contention affecting the bounded physics checks. Test assertions and timeouts are unchanged.
+
 
 ## Source map and technologies
 
@@ -60,18 +60,12 @@ File parallelism is disabled in this example to avoid resource contention affect
 | `contracts` | Rust/NEAR policy and Contributor DAO contracts |
 | `workers/contributor-verdict` | Deterministic review worker; native and WASI/OutLayer integration source |
 | `tests` | App, auth, route, receipt, recovery and governance regressions |
-| `deploy` | Docker/Compose deployment candidates; production rollout requires owner approval |
-| `docs/dao` | Contract ABI, integration boundaries and sanitized testnet evidence |
+| `deploy` | Docker and Compose service definitions |
+| `docs/dao` | Contract API, worker integration and public testnet references |
 | `public` | Product assets, fonts and third-party license notices |
 
 Integrations include NEAR wallets (`@hot-labs/near-connect`), NEAR Intents 1Click SDK, NEAR policy/Chain Signatures source, Phantom/Solana/Jupiter, MetaMask/LI.FI and Hyperliquid. Presence of an adapter does not mean funded acceptance is complete. Third-party libraries, services, assets and licenses remain their authors' work.
 
-## Hackathon provenance
-
-The official rules allow work since the October 19, 2026 announcement. Private development history begins October 23 local time (October 22 UTC); work before the November 1 form opening is not automatically excluded. This public candidate is an exported source snapshot. It does not rewrite private Git history, and its publication commit date is not a claim that all code was authored on that day. See [source provenance](SOURCE_PROVENANCE.md).
-
-Owner-selected tracks: Unstoppable DeFi, Agent Economy, Memecoins With Mechanics, Social Money and Open Innovation. The implemented mechanics and limits above are what judges can verify; track selection does not imply a shipped protocol token or private execution.
-
 ## License
 
-Project source is MIT, selected by the owner. See [LICENSE](LICENSE). Preserve third-party license/copyright notices and comply with their separate terms.
+Project source is licensed under MIT. See [LICENSE](LICENSE). Preserve third-party license/copyright notices and comply with their separate terms.
