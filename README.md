@@ -66,6 +66,10 @@ cargo test --workspace --locked
 
 Integrations include NEAR wallets (`@hot-labs/near-connect`), NEAR Intents 1Click SDK, NEAR policy/Chain Signatures source, Phantom/Solana/Jupiter, MetaMask/LI.FI and Hyperliquid. Presence of an adapter does not mean funded acceptance is complete. Third-party libraries, services, assets and licenses remain their authors' work.
 
+## Development and releases
+
+Ongoing development uses `dev`. `main` is reserved for reviewed live releases. Changes on `dev` do not deploy to the live domain.
+
 ## License
 
 Project source is licensed under MIT. See [LICENSE](LICENSE). Preserve third-party license/copyright notices and comply with their separate terms.
