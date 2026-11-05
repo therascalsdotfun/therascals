@@ -116,6 +116,8 @@ export function registerIntentsExecution(
             destinationAsset: z.string().min(1).max(250),
             amount: z.string().max(25),
             recipient: z.string().min(2).max(80),
+            presetId: z.string().uuid().optional(),
+            rollId: z.string().regex(/^[a-f0-9]{64}$/).optional(),
           })
           .strict()
           .safeParse(req.body);
@@ -134,7 +136,14 @@ export function registerIntentsExecution(
           503,
         );
       }
-      return swaps!.prepare(u, body.data);
+      const attributedPreset =
+        body.data.presetId ??
+        (body.data.rollId ? presets?.presetForRoll(u, body.data.rollId) : null) ??
+        presets?.activeFor(u);
+      return swaps!.prepare(u, {
+        ...body.data,
+        ...(attributedPreset ? { presetId: attributedPreset } : {}),
+      });
     }),
   );
   app.get(
@@ -177,8 +186,8 @@ export function registerIntentsExecution(
       const op = await funding!.submit(u, req.params.id, body.data.signedTransaction);
       const hash = op.fundingSignature || op.nearCandidateHash;
       if (presets && hash) {
-        const active = presets.activeFor(u);
-        if (active) presets.tradeExecuted(u, active, hash);
+        const preset = op.presetId ?? presets.activeFor(u);
+        if (preset) presets.tradeExecuted(u, preset, hash);
       }
       return op;
     }),
@@ -195,8 +204,8 @@ export function registerIntentsExecution(
         throw new IntentsError("Invalid NEAR transfer hash.", 400);
       const op = await funding!.notifyNear(u, req.params.id, body.data.txHash);
       if (presets) {
-        const active = presets.activeFor(u);
-        if (active) presets.tradeExecuted(u, active, body.data.txHash);
+        const preset = op.presetId ?? presets.activeFor(u);
+        if (preset) presets.tradeExecuted(u, preset, body.data.txHash);
       }
       return op;
     }),

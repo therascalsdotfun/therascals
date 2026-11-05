@@ -35,10 +35,12 @@ const terminal = (o: IntentsSwapOperation) =>
   ["success", "refunded", "funding_failed"].includes(o.phase);
 export function IntentsSwap({
   token,
+  rollId,
   onConnect,
   onBusy,
 }: {
   token?: TokenObservation | null;
+  rollId?: string | null;
   onConnect: () => void;
   onBusy?: (busy: boolean) => void;
 }) {
@@ -210,6 +212,7 @@ export function IntentsSwap({
         destinationAsset: destination,
         amount,
         recipient,
+        ...(rollId ? { rollId } : {}),
       });
       if (own === scopeRef.current) setOp(d);
     } catch (e) {

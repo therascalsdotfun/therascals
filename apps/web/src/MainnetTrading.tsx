@@ -53,7 +53,7 @@ export function MainnetTrading({
       </div>
       {route === "jupiter" ? (
         token && ["base", "bsc"].includes(tokenChain(token)) ? (
-          <EvmTrade token={token} amount={amount} onBusy={pending} />
+          <EvmTrade token={token} rollId={rollId} amount={amount} onBusy={pending} />
         ) : !token ? (
           <div className="mainnet-connect">
             <h3>Trade your draw</h3>
@@ -72,7 +72,7 @@ export function MainnetTrading({
         )
       ) : (
         <>
-          <IntentsSwap token={token} onConnect={onConnect} onBusy={pending} />
+          <IntentsSwap token={token} rollId={rollId} onConnect={onConnect} onBusy={pending} />
           {!busy && (
             <details
               className="intents-preview"

@@ -89,10 +89,12 @@ const output = (raw: string, decimals: number) =>
 export function EvmTrade({
   token,
   amount,
+  rollId,
   onBusy,
 }: {
   token: TokenObservation;
   amount: string;
+  rollId?: string | null;
   onBusy?: (busy: boolean) => void;
 }) {
   const { accounts, connect, evm, pending: walletPending } = useWallets();
@@ -156,7 +158,9 @@ export function EvmTrade({
   async function updateReceipt(p: PendingTrade) {
     if (!p.hash) return;
     const own = scope;
-    const receipt = await api(`receipt?chain=${p.quote.chain}&hash=${p.hash}`);
+    const receipt = await api(
+      `receipt?chain=${p.quote.chain}&hash=${p.hash}&quoteId=${p.quote.id}`,
+    );
     if (receipt.wallet && !sameEvm(receipt.wallet, p.quote.wallet))
       throw Error("This receipt belongs to a different wallet");
     const next = {
@@ -216,6 +220,7 @@ export function EvmTrade({
         mint: token.mint,
         wallet,
         amount,
+        ...(rollId ? { rollId } : {}),
       })) as EvmTradeQuote;
       validateEvmQuote(q.routeQuote, {
         chain,

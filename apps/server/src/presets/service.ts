@@ -162,6 +162,11 @@ export class CommunityPresets {
     if (filters && active.code !== encodeFilterCode(filters)) return null;
     return active.presetId;
   }
+  presetForRoll(user: WalletIdentity, rollId: string): string | null {
+    const attr = this.store.getRecord<{ presetId: string; owner: string; expires: number }>("preset:roll-attribution:" + rollId);
+    if (!attr || attr.owner !== this.wallet(user) || attr.expires < this.now()) return null;
+    return attr.presetId;
+  }
   tradeExecuted(user: WalletIdentity, presetId: string, signature: string) {
     this.store.transaction(() => {
       const owner = this.wallet(user);
