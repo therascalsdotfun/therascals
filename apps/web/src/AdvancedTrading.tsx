@@ -1,4 +1,4 @@
-import { ArrowUpRight, ChevronDown } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Flame } from "lucide-react";
 import { WalletLogo, SolanaLogo } from "./Icons.tsx";
 import type { TokenObservation } from "../../../packages/shared/src/market.ts";
 import { selectedPairLinks } from "../../../packages/shared/src/trading-links.ts";
@@ -49,6 +49,10 @@ export function AdvancedTrading({
             pair. NEAR has a separate asset catalog. Opening a link submits no
             trade and transfers no funds.
           </p>
+          <p>
+            To trade perpetual futures with up to 40x leverage, use confidential perps on
+            near.com powered by Hyperliquid and settled via NEAR Intents.
+          </p>
           <code className="handoff-mint">{token.mint}</code>
         </details>
       </div>
@@ -68,6 +72,15 @@ export function AdvancedTrading({
           rel="noreferrer"
         >
           <WalletLogo kind="near" size={16} /> NEAR <ArrowUpRight size={15} />
+        </a>
+        <a
+          className="secondary perps-action-btn"
+          href="https://perps.near.com/"
+          target="_blank"
+          rel="noreferrer"
+          title="Trade confidential 40x perps on near.com powered by Hyperliquid"
+        >
+          <Flame size={16} /> 40x Perps <ArrowUpRight size={15} />
         </a>
       </div>
     </section>

@@ -18,11 +18,15 @@ import {
   ArrowRightLeft,
   ArrowUpRight,
   ExternalLink,
+  Flame,
+  Globe,
   LoaderCircle,
+  Lock,
   RefreshCw,
   ShieldAlert,
   Sparkles,
   Wallet,
+  Zap,
 } from "lucide-react";
 import type {
   PerpsAgentView,
@@ -641,29 +645,174 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
   };
 }
 
+const FEATURED_PERP_MARKETS = [
+  { symbol: "BTC", name: "Bitcoin", maxLeverage: "40x", href: "https://perps.near.com/" },
+  { symbol: "ETH", name: "Ethereum", maxLeverage: "40x", href: "https://perps.near.com/" },
+  { symbol: "SOL", name: "Solana", maxLeverage: "20x", href: "https://perps.near.com/" },
+  { symbol: "NEAR", name: "NEAR Protocol", maxLeverage: "20x", href: "https://perps.near.com/" },
+  { symbol: "SUI", name: "Sui", maxLeverage: "20x", href: "https://perps.near.com/" },
+  { symbol: "DOGE", name: "Dogecoin", maxLeverage: "20x", href: "https://perps.near.com/" },
+  { symbol: "PEPE", name: "Pepe", maxLeverage: "10x", href: "https://perps.near.com/" },
+  { symbol: "AVAX", name: "Avalanche", maxLeverage: "20x", href: "https://perps.near.com/" },
+];
+
 export function PerpsPage({ game }: { game: PerpsGame }) {
+  const [view, setView] = useState<"portal" | "arcade">("portal");
+
   return (
     <section className="perps-page">
-      <header className="perps-hero">
-        <div>
-          <span className="perps-eyebrow">RASCALS ORIGINALS</span>
-          <h1>Perp slot</h1>
-          <p>Four reels. A little chaos. One Hyperliquid position.</p>
-        </div>
-        <span className="perps-badge">
-          HYPERLIQUID · {game.network === "mainnet" ? "MAINNET" : "TESTNET"}
-        </span>
-      </header>
-      <div className="perps-layout">
-        <PerpsSlot game={game} />
-        <PerpsPanel game={game} />
+      <div className="perps-mode-toggle" role="tablist" aria-label="Perpetuals viewing mode">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === "portal"}
+          className={`perps-tab-btn ${view === "portal" ? "active" : ""}`}
+          onClick={() => setView("portal")}
+        >
+          <Flame size={15} /> Confidential Hub (near.com)
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === "arcade"}
+          className={`perps-tab-btn ${view === "arcade" ? "active" : ""}`}
+          onClick={() => setView("arcade")}
+        >
+          <Dices size={15} /> Arcade Slot Mode
+        </button>
       </div>
-      <PerpsFundingQuote />
-      <p className="perps-risk">
-        <ShieldAlert size={14} /> Random leverage can erase the stake.
-        Hyperliquid enforces a $10 minimum order, isolated margin and
-        liquidation. The agent wallet can trade and close but cannot withdraw.
-      </p>
+
+      {view === "portal" ? (
+        <div className="perps-portal-hub">
+          <header className="perps-hero perps-hub-hero">
+            <div>
+              <span className="perps-eyebrow">RASCALS × NEAR.COM × HYPERLIQUID</span>
+              <h1>Trade Perps, Confidentially</h1>
+              <p>
+                &gt;&gt; Up to 40x leverage across 50+ perpetual markets. Fund from any chain and any asset
+                through NEAR Intents. Nobody can trace your position back to you.
+              </p>
+            </div>
+            <div className="perps-hero-actions">
+              <a
+                href="https://perps.near.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="primary perps-launch-cta"
+              >
+                Launch near.com Perps <ArrowUpRight size={16} />
+              </a>
+            </div>
+          </header>
+
+          <div className="perps-features-grid">
+            <div className="perps-feature-card">
+              <div className="feature-icon-wrap"><Flame size={20} /></div>
+              <h4>Up to 40x Leverage</h4>
+              <p>
+                Trade majors and trending memecoins with isolated margin, dynamic liquidation protection,
+                and custom take profit / stop loss levels.
+              </p>
+            </div>
+            <div className="perps-feature-card">
+              <div className="feature-icon-wrap"><Zap size={20} /></div>
+              <h4>Cross-Chain via NEAR Intents</h4>
+              <p>
+                Deposit from 30+ chains (SOL, ETH, BTC, NEAR, USDC). Assets are auto-swapped into HyperCore
+                USDC margin without manual bridging.
+              </p>
+            </div>
+            <div className="perps-feature-card">
+              <div className="feature-icon-wrap"><Lock size={20} /></div>
+              <h4>Confidential Trading</h4>
+              <p>
+                Dedicated trading account on Hyperliquid. Deposits and withdrawals route through NEAR Intents
+                so positions cannot be traced back to you.
+              </p>
+            </div>
+            <div className="perps-feature-card">
+              <div className="feature-icon-wrap"><Globe size={20} /></div>
+              <h4>Zero Seed Phrase</h4>
+              <p>
+                Sign on your device with passkey support. No wallet extensions, KYC, or seed phrases to write down.
+                Ready in seconds.
+              </p>
+            </div>
+          </div>
+
+          <div className="perps-markets-section">
+            <div className="section-title-wrap">
+              <h3>Featured 40x Perpetual Markets</h3>
+              <p className="disclosure">
+                Live perpetual contracts settling on Hyperliquid L1 order books.
+              </p>
+            </div>
+            <div className="perps-markets-grid">
+              {FEATURED_PERP_MARKETS.map((m) => (
+                <div key={m.symbol} className="perp-market-card">
+                  <div className="market-header">
+                    <div>
+                      <span className="market-symbol">{m.symbol}-PERP</span>
+                      <span className="market-name">{m.name}</span>
+                    </div>
+                    <span className="leverage-pill">{m.maxLeverage}</span>
+                  </div>
+                  <div className="market-footer">
+                    <span className="venue-tag">Hyperliquid L1</span>
+                    <a
+                      href={m.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="market-trade-link"
+                    >
+                      Trade on near.com <ArrowUpRight size={13} />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="perps-calculator-section">
+            <div className="section-title-wrap">
+              <h3>NEAR Intents Margin Calculator</h3>
+              <p className="disclosure">
+                Calculate your cross-chain deposit into HyperCore USDC margin before entering a position.
+              </p>
+            </div>
+            <PerpsFundingQuote />
+          </div>
+
+          <p className="perps-risk">
+            <ShieldAlert size={15} /> Leveraged perpetual contracts carry substantial risk of loss and liquidation.
+            Trades execute on Hyperliquid L1; cross-chain deposits route via NEAR Intents. The official portal is
+            accessible at <a href="https://perps.near.com/" target="_blank" rel="noreferrer">https://perps.near.com/</a>.
+          </p>
+        </div>
+      ) : (
+        <div className="perps-arcade-hub">
+          <header className="perps-hero">
+            <div>
+              <span className="perps-eyebrow">RASCALS ORIGINALS</span>
+              <h1>Perp slot machine</h1>
+              <p>Four reels. A little chaos. One Hyperliquid position.</p>
+            </div>
+            <span className="perps-badge">
+              HYPERLIQUID · {game.network === "mainnet" ? "MAINNET" : "TESTNET"}
+            </span>
+          </header>
+          <div className="perps-layout">
+            <PerpsSlot game={game} />
+            <PerpsPanel game={game} />
+          </div>
+          <PerpsFundingQuote />
+          <p className="perps-risk">
+            <ShieldAlert size={14} /> Random leverage can erase the stake.
+            Hyperliquid enforces a $10 minimum order, isolated margin and
+            liquidation. The agent wallet can trade and close but cannot withdraw.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

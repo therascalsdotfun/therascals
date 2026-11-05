@@ -833,15 +833,13 @@ export default function App() {
               <Dices size={17} /> DEX
             </button>
 
-            {perpsAvailability === "mainnet" && (
-              <button
-                className={tab === "perps" ? "active" : ""}
-                aria-current={tab === "perps" ? "page" : undefined}
-                onClick={() => setTab("perps")}
-              >
-                <Flame size={17} /> Perp
-              </button>
-            )}
+            <button
+              className={tab === "perps" ? "active" : ""}
+              aria-current={tab === "perps" ? "page" : undefined}
+              onClick={() => setTab("perps")}
+            >
+              <Flame size={17} /> Perp
+            </button>
             <button
               className={tab === "markets" ? "active" : ""}
               onClick={() => setTab("markets")}
@@ -1483,19 +1481,7 @@ export default function App() {
               </aside>
             </div>
           ) : tab === "perps" ? (
-            perpsAvailability === "mainnet" ? (
-              <PerpsPage game={perps} />
-            ) : (
-              <section>
-                <h1>Perp slots</h1>
-                <p>
-                  {perpsAvailability === "loading"
-                    ? "Checking Hyperliquid availability…"
-                    : "Hyperliquid trading is unavailable on this server."}
-                </p>
-                <button onClick={() => setTab("draw")}>Back to DEX</button>
-              </section>
-            )
+            <PerpsPage game={perps} />
           ) : tab === "dao" ? (
             <section
               className="dao-integrated"
