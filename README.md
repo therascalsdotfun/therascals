@@ -49,6 +49,27 @@ The arcade merges high-energy meme culture with uncompromised cryptographic hone
 
 ---
 
+## 📸 Screenshots
+
+<div align="center">
+<table>
+<tr>
+<td width="50%"><img src="./docs/images/3d-lottery-cage.png" alt="3D Lottery Cage" width="100%"/><br/><b>3D Lottery Cage</b> - Physical crank & bottom chute extraction</td>
+<td width="50%"><img src="./docs/images/case-opening.png" alt="Case Opening" width="100%"/><br/><b>Case Opening</b> - Tension reel token unboxing</td>
+</tr>
+<tr>
+<td width="50%"><img src="./docs/images/full-degen.png" alt="Full Degen Mode" width="100%"/><br/><b>Full Degen</b> - Chain, Token & Amount 3-reel spin</td>
+<td width="50%"><img src="./docs/images/filter-presets.png" alt="Filter Settings & Presets" width="100%"/><br/><b>Filters & Presets</b> - Custom screening & Degen Codes</td>
+</tr>
+<tr>
+<td width="50%"><img src="./docs/images/near-intents.png" alt="NEAR Intents Swaps" width="100%"/><br/><b>NEAR Intents</b> - Cross-chain 1Click quotes & routing</td>
+<td width="50%"><img src="./docs/images/contributor-dao.png" alt="Contributor DAO" width="100%"/><br/><b>Contributor DAO</b> - NEAR testnet governance & bounty claims</td>
+</tr>
+</table>
+</div>
+
+---
+
 ## 🕹️ Arcade & Discovery Modes
 
 | Mode | Mechanic | Experience |
