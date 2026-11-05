@@ -238,6 +238,44 @@ export function createAgentServer(
     },
     guarded((args) => dryQuote("/api/perps/funding-quote", args)),
   );
+  server.registerTool(
+    "search_presets",
+    {
+      description:
+        "Search community filter presets by popularity, trade volume or keywords. Read-only. Returns preset title, author, usage metrics and Degen Code.",
+      inputSchema: z
+        .object({
+          q: z.string().max(80).optional(),
+          sort: z.enum(["popular", "trades", "recent"]).default("popular"),
+          limit: z.number().int().min(1).max(50).default(20),
+          offset: z.number().int().min(0).max(1000).default(0),
+        })
+        .strict(),
+      annotations,
+    },
+    guarded(async ({ q, sort, limit, offset }) => {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (sort) params.set("sort", sort);
+      params.set("limit", String(limit));
+      params.set("offset", String(offset));
+      return request(`/api/presets?${params.toString()}`);
+    }),
+  );
+  server.registerTool(
+    "get_preset",
+    {
+      description:
+        "Fetch an exact community filter preset by UUID, including decoded filter rules and creator attribution.",
+      inputSchema: z
+        .object({
+          id: z.string().uuid(),
+        })
+        .strict(),
+      annotations,
+    },
+    guarded(async ({ id }) => request(`/api/presets/${id}`)),
+  );
   server.registerResource(
     "platform-guide",
     "rascals://guide",
