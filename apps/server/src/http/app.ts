@@ -23,6 +23,8 @@ import { IntentsError, IntentsService } from "../intents/service.ts";
 import { registerPerps } from "../perps/http.ts";
 import type { PerpsService } from "../perps/execution.ts";
 import { registerRewards } from "../rewards/http.ts";
+import { registerCommunityPresets } from "../presets/http.ts";
+import { CommunityPresets, PresetError } from "../presets/service.ts";
 import { RewardsError, RewardsService } from "../rewards/service.ts";
 import { verifyMainnetBuy } from "../rewards/receipt.ts";
 import { registerMainnet } from "../mainnet/http.ts";
@@ -56,6 +58,7 @@ const configuration = z
       .refine((x) => Number(x) <= 100),
     preset: z.enum(["strict", "broad", "tight"]).default("strict"),
     filters: filters.optional(),
+    presetId: z.string().uuid().optional(),
   })
   .strict();
 export async function createApp(
@@ -180,9 +183,12 @@ export async function createApp(
       });
   });
   registerWalletAuth(app, auth, runtime.origins);
+  const presets = options.store ? new CommunityPresets(options.store) : undefined;
   registerMainnet(app, {
     market: discovery,
     rate: (key, max) => auth.rate(key, max),
+    presets,
+    identity,
   });
   const rewards =
     options.rewards ??
@@ -267,7 +273,8 @@ export async function createApp(
           },
         })
       : undefined);
-  registerRewards(app, rewards, identity, auth);
+  registerRewards(app, rewards, identity, auth, presets);
+  registerCommunityPresets(app, presets, identity, auth);
   const swaps =
     options.intentsExecution ??
     (options.store && !options.intents
@@ -278,7 +285,7 @@ export async function createApp(
     (options.store && swaps
       ? new IntentsFunding(options.store, swaps)
       : undefined);
-  registerIntentsExecution(app, swaps, funding, identity, auth);
+  registerIntentsExecution(app, swaps, funding, identity, auth, undefined, presets);
   if (releasePerps) registerPerps(app, releasePerps, identity, auth);
   app.get("/api/runtime", () => ({
     mode: runtime.mode,
@@ -347,6 +354,7 @@ export async function createApp(
                 identity(req)!,
                 body.data.mint,
                 String(Math.round(Number(body.data.amount) * 1e6)),
+                presets?.activeFor(identity(req)!),
               )
             : null,
       };
@@ -807,11 +815,16 @@ export async function createApp(
     if (!body.success)
       return reply.code(400).send({ error: "Invalid configuration hash" });
     try {
-      return discovery(req, reply).beginRoll(
-        body.data.configurationHash,
-        body.data.amountMode,
-        body.data.poolKeys,
-      );
+      const scoped = discovery(req, reply),
+        begun = scoped.beginRoll(
+          body.data.configurationHash,
+          body.data.amountMode,
+          body.data.poolKeys,
+        ),
+        user = identity(req);
+      if (user && presets)
+        presets.begin(user, scoped.snapshot({ limit: 1 }).filters, begun.id);
+      return begun;
     } catch (e) {
       if (e instanceof AuthError) throw e;
       return reply.code(409).send({
@@ -825,7 +838,10 @@ export async function createApp(
     const body = z.object({ rollId }).strict().safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: "Invalid roll" });
     try {
-      return discovery(req, reply).revealRoll(body.data.rollId);
+      const revealed = discovery(req, reply).revealRoll(body.data.rollId),
+        user = identity(req);
+      if (user && presets) presets.revealed(user, body.data.rollId);
+      return revealed;
     } catch (e) {
       if (e instanceof AuthError) throw e;
       return reply.code(409).send({
@@ -844,6 +860,16 @@ export async function createApp(
       };
     if (!validFilterRanges(f))
       return reply.code(400).send({ error: "Minimum exceeds maximum" });
+    const user = identity(req);
+    if (user && presets) {
+      try {
+        presets.applied(user, x.presetId, f);
+      } catch (e) {
+        if (e instanceof PresetError)
+          return reply.code(e.status).send({ error: e.message });
+        throw e;
+      }
+    }
     discovery(req, reply).configure({
       filters: f,
       ticketAtomic: String(Math.round(Number(x.ticket) * 1e6)),

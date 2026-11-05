@@ -7,6 +7,8 @@ import { simulateSolanaMessage } from "./preflight.ts";
 import { clientMessage } from "../client-message.ts";
 import type { Connection } from "@solana/web3.js";
 import { registerSellQuotes } from "../portfolio/sell-quote.ts";
+import type { CommunityPresets } from "../presets/service.ts";
+import type { WalletIdentity } from "../../../../packages/shared/src/wallet-auth.ts";
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/),
   chain = z.enum(["base", "bsc"]);
 export function registerMainnet(
@@ -16,6 +18,8 @@ export function registerMainnet(
     rate: (key: string, max: number) => void;
     evm?: EvmMainnet;
     solana?: Connection;
+    presets?: CommunityPresets;
+    identity?: (req: any) => WalletIdentity | null;
   },
 ) {
   registerSellQuotes(app, options.rate);
@@ -156,7 +160,15 @@ export function registerMainnet(
         .code(400)
         .send({ error: "Invalid network or transaction hash" });
     try {
-      return await evm.receipt(p.data.chain, p.data.hash);
+      const receipt = await evm.receipt(p.data.chain, p.data.hash);
+      if (receipt?.status === "confirmed" && options.presets && options.identity) {
+        const u = options.identity(req);
+        if (u) {
+          const active = options.presets.activeFor(u);
+          if (active) options.presets.tradeExecuted(u, active, p.data.hash);
+        }
+      }
+      return receipt;
     } catch (e) {
       return failure(reply, e);
     }

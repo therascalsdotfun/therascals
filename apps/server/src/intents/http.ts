@@ -8,6 +8,7 @@ import { IntentsError } from "./service.ts";
 import { subjectFor } from "../beta/access.ts";
 import { cookies } from "../auth/http.ts";
 import { IntentsUserSessions } from "./user-session.ts";
+import type { CommunityPresets } from "../presets/service.ts";
 export function registerIntentsExecution(
   app: FastifyInstance,
   swaps: IntentsExecution | undefined,
@@ -15,6 +16,7 @@ export function registerIntentsExecution(
   identity: (req: any) => WalletIdentity | null,
   auth: WalletAuthService,
   sessions = new IntentsUserSessions(auth),
+  presets?: CommunityPresets,
 ) {
   function user(req: any) {
     const u = identity(req);
@@ -164,7 +166,7 @@ export function registerIntentsExecution(
   );
   app.post(
     "/api/intents/operations/:id/submit",
-    handle((req) => {
+    handle(async (req) => {
       const u = user(req),
         body = z
           .object({ signedTransaction: z.string().min(1).max(12000) })
@@ -172,12 +174,18 @@ export function registerIntentsExecution(
           .safeParse(req.body);
       if (!body.success)
         throw new IntentsError("Invalid signed funding transaction.", 400);
-      return funding!.submit(u, req.params.id, body.data.signedTransaction);
+      const op = await funding!.submit(u, req.params.id, body.data.signedTransaction);
+      const hash = op.fundingSignature || op.nearCandidateHash;
+      if (presets && hash) {
+        const active = presets.activeFor(u);
+        if (active) presets.tradeExecuted(u, active, hash);
+      }
+      return op;
     }),
   );
   app.post(
     "/api/intents/operations/:id/near-deposit",
-    handle((req) => {
+    handle(async (req) => {
       const u = user(req),
         body = z
           .object({ txHash: z.string().regex(/^[1-9A-HJ-NP-Za-km-z]{32,90}$/) })
@@ -185,7 +193,12 @@ export function registerIntentsExecution(
           .safeParse(req.body);
       if (!body.success)
         throw new IntentsError("Invalid NEAR transfer hash.", 400);
-      return funding!.notifyNear(u, req.params.id, body.data.txHash);
+      const op = await funding!.notifyNear(u, req.params.id, body.data.txHash);
+      if (presets) {
+        const active = presets.activeFor(u);
+        if (active) presets.tradeExecuted(u, active, body.data.txHash);
+      }
+      return op;
     }),
   );
 }
