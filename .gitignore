@@ -27,3 +27,7 @@ __pycache__/
 .env.*
 !.env.example
 !**/.env.example
+
+# Local content and media; not part of the source repository.
+marketing/
+exports/
