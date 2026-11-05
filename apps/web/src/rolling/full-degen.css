@@ -1,0 +1,181 @@
+.roll-picker .degen-mode[aria-pressed="true"] {
+  color: #ffd879;
+  border-color: #d9aa4852;
+  background: #d9aa4818;
+}
+.degen-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 0 0;
+  color: #7f8b74;
+  font-size: 10px;
+}
+.degen-progress > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.degen-progress .current {
+  color: #ffd879;
+}
+.degen-progress .done {
+  color: #d6f15c;
+}
+.degen-progress b {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 9px;
+}
+.degen-coin-picked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #aab69a;
+  font-size: 11px;
+  margin: 8px 0 0;
+}
+.degen-coin-picked strong {
+  color: #e6edd8;
+}
+.amount-card {
+  justify-content: flex-start;
+}
+.amount-card-odds {
+  align-self: stretch;
+  padding: 12px;
+  font-size: 10px;
+  color: #b6aa93;
+}
+.amount-card > svg {
+  margin: 12px 0 4px;
+  color: #efb762;
+}
+.case-card.amount-card > strong {
+  font-family: inherit;
+  font-size: 43px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 0;
+  letter-spacing: -2px;
+}
+.amount-card-bottom {
+  margin-top: auto;
+  width: 100%;
+  text-align: center;
+  padding: 12px;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: #8d967e;
+}
+.degen-odds {
+  margin: 0 0 14px;
+  border: 1px solid #d9aa482a;
+  border-radius: 12px;
+  padding: 14px;
+  background: #d9aa4808;
+}
+.degen-odds-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #ffd879;
+  font-size: 12px;
+}
+.degen-odds-heading > span {
+  margin-left: auto;
+  font-size: 10px;
+}
+.degen-odds p {
+  font-size: 10px;
+  color: #a2ac95;
+  margin: 8px 0;
+  line-height: 1.6;
+}
+.degen-odds-summary {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 13px 0;
+  font-size: 9px;
+  color: #a1ad93;
+}
+.degen-odds-summary strong {
+  display: block;
+  margin-top: 4px;
+  color: #dfe8cd;
+  font-size: 11px;
+}
+.degen-odds details {
+  border-top: 1px solid #ffffff0c;
+  padding-top: 10px;
+}
+.degen-odds summary {
+  color: #f5ce7a;
+  font-size: 11px;
+  cursor: pointer;
+}
+.degen-odds-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 18px;
+  margin-top: 10px;
+}
+.degen-odds-grid > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid #ffffff09;
+  font-size: 10px;
+}
+.degen-odds-grid span {
+  color: #a1ad93;
+}
+.degen-result {
+  margin: 8px 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #d9aa4850;
+  background: #d9aa4812;
+  border-radius: 10px;
+  padding: 12px;
+  color: #f5ce7a;
+  font-size: 12px;
+}
+.degen-result strong {
+  font-size: 24px;
+  color: #ffe29a;
+}
+.degen-preview-note {
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #b3bea3;
+}
+@media (max-width: 600px) {
+  .roll-picker {
+    width: 100%;
+  }
+  .roll-picker button {
+    flex: 1;
+    padding: 8px;
+    gap: 5px;
+    font-size: 10px;
+  }
+  .degen-progress {
+    font-size: 9px;
+    gap: 6px;
+  }
+  .degen-progress b {
+    width: 16px;
+    height: 16px;
+  }
+  .case-card.amount-card > strong {
+    font-size: 37px;
+  }
+}

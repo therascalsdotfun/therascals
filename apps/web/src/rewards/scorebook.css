@@ -1,0 +1,360 @@
+/* Scorebook direction informed by Unslop, Damir Sokolovsky (@heydamir).
+   https://github.com/heydamir/unslop · CC BY 4.0.
+   Keep the paper arcade; concentrate its color in the actual product. */
+.rewards-page {
+  --score-paper: #fffdf7;
+  --score-raised: #f3f0e8;
+  --score-line: #d8d3c8;
+  --score-ink: #302e38;
+  --score-secondary: #605c68;
+  --score-accent: #3557d7;
+  padding: 48px 0 64px;
+  color: var(--score-ink);
+  font-variant-numeric: tabular-nums;
+}
+body:has(.rewards-page) .rascal-world {
+  opacity: 0.18;
+}
+.app:has(.rewards-page) > header nav button {
+  font-weight: 600;
+}
+.rewards-page .rewards-heading {
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+.rewards-page .rewards-eyebrow {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--score-secondary);
+  padding-bottom: 8px;
+  position: relative;
+}
+.rewards-page .rewards-eyebrow::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 48px;
+  height: 3px;
+  border-radius: 40% 20% 50% 30%;
+  background: var(--score-accent);
+  transform: rotate(-2deg);
+}
+.rewards-page .rewards-heading h1 {
+  font-family: inherit;
+  font-size: clamp(28px, 3.2vw, 44px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 20px 0 12px;
+}
+.rewards-page .rewards-heading p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--score-secondary);
+  margin: 0;
+}
+.scorebook-rate {
+  flex: 0 0 240px;
+  display: grid;
+  gap: 8px;
+  border-left: 1px solid var(--score-line);
+  padding: 8px 0 8px 32px;
+}
+.scorebook-rate > span {
+  color: var(--score-secondary);
+  font-size: 12px;
+}
+.scorebook-rate strong {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 48px;
+  font-weight: 500;
+  line-height: 1;
+}
+.scorebook-rate small {
+  font-size: 14px;
+  font-weight: 400;
+}
+.rewards-page .points-disclaimer {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--score-line);
+  border-radius: 0;
+  padding: 16px 0;
+  color: var(--score-secondary);
+  font-size: 12px;
+}
+.rewards-page .points-leaderboard {
+  margin: 16px 0 32px;
+  padding: 32px;
+  border: 1px solid var(--score-line);
+  border-radius: 16px;
+  background: var(--score-paper);
+  box-shadow: 0 2px 8px #302e3806;
+}
+.rewards-page .points-leaderboard-heading {
+  color: var(--score-ink);
+  gap: 16px;
+}
+.rewards-page h2,
+.rewards-page .points-leaderboard h2 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.rewards-page .points-leaderboard-heading > div {
+  gap: 12px;
+}
+.rewards-page .points-leaderboard-heading svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.5;
+}
+.rewards-page .points-leaderboard p,
+.rewards-page .points-leaderboard > small,
+.rewards-page .leaderboard-empty,
+.rewards-page .reward-utilities p,
+.rewards-page .reward-utilities small,
+.rewards-page .reward-ledger > span,
+.rewards-page .reward-ledger small,
+.rewards-page .reward-signin p {
+  color: var(--score-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.rewards-page .points-leaderboard button,
+.rewards-page .reward-utilities button {
+  min-height: 40px;
+  border: 1px solid var(--score-line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--score-raised);
+  color: var(--score-ink);
+  box-shadow: none;
+  font-weight: 500;
+}
+.rewards-page .points-leaderboard th {
+  padding: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--score-secondary);
+  background: var(--score-raised);
+}
+.rewards-page .points-leaderboard td {
+  border-top: 1px solid var(--score-line);
+  padding: 20px 12px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.rewards-page .points-leaderboard td:last-child {
+  color: var(--score-accent);
+  font-weight: 600;
+}
+.rewards-page .points-leaderboard .is-you {
+  background: #edf0fc;
+}
+.rewards-page .points-leaderboard td b {
+  background: #dde4fb;
+  color: #304c9c;
+  font-weight: 500;
+  font-size: 11px;
+}
+.rewards-page .leaderboard-empty {
+  padding: 48px 16px;
+  gap: 12px;
+  border-block: 1px solid var(--score-line);
+  margin: 24px 0;
+}
+.rewards-page .leaderboard-empty strong {
+  color: var(--score-ink);
+  font-size: 18px;
+  font-weight: 500;
+}
+.rewards-page .leaderboard-empty > svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.5;
+  color: var(--score-secondary);
+}
+.rewards-page .leaderboard-empty span {
+  font-size: 13px;
+  max-width: 36ch;
+}
+.rewards-page .reward-signin {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 24px 32px;
+  margin: 0;
+  max-width: none;
+  text-align: left;
+  background: var(--score-raised);
+  border: 1px solid var(--score-line);
+  border-radius: 12px;
+}
+.rewards-page .reward-signin > svg {
+  grid-row: span 2;
+  color: var(--score-secondary);
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.5;
+}
+.rewards-page .reward-signin h2,
+.rewards-page .reward-signin p {
+  margin: 0;
+}
+.rewards-page .reward-signin h2 {
+  font-size: 18px;
+}
+.rewards-page .reward-signin p {
+  grid-column: 2;
+}
+.rewards-page .reward-signin button {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  min-height: 44px;
+  padding: 12px 20px;
+  background: var(--score-accent);
+  color: #ffffff;
+  border: 1px solid var(--score-accent);
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 500;
+  transform: none;
+}
+.rewards-page .reward-balances {
+  display: block;
+  margin: 24px 0;
+}
+.rewards-page .reward-balances > div.is-current {
+  background: var(--score-raised);
+  border: 1px solid var(--score-line);
+  border-radius: 12px;
+  padding: 24px 32px;
+  transform: none;
+  box-shadow: none;
+}
+.rewards-page .reward-balances strong {
+  font-size: 40px;
+  font-weight: 500;
+}
+.rewards-page .reward-utilities article {
+  border: 1px solid var(--score-line);
+  border-radius: 12px;
+  padding: 24px;
+  background: var(--score-paper);
+}
+.rewards-page .reward-utilities .reward-sticker {
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+.rewards-page .reward-utilities svg {
+  color: var(--score-secondary);
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.5;
+}
+.rewards-page .reward-ledger {
+  margin-top: 40px;
+}
+.rewards-page .reward-ledger li {
+  padding: 20px 0;
+  border-bottom-style: solid;
+}
+.rewards-page button {
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+.rewards-page button:hover:not(:disabled) {
+  filter: brightness(0.97);
+  transform: none;
+}
+.rewards-page button:focus-visible {
+  outline: 2px solid var(--score-accent);
+  outline-offset: 4px;
+}
+.reward-tier-card {
+  background: #f7f5ee;
+  border: 1px solid #cbc6ba;
+  border-radius: 12px;
+  padding: 16px;
+  color: #302e38;
+}
+.reward-tier-title {
+  font-size: 13px;
+  gap: 12px;
+}
+.reward-tier-title > b {
+  color: #3557d7;
+  background: transparent;
+  padding: 0;
+  font-weight: 600;
+}
+.reward-tier-card > small {
+  color: #605c68;
+  font-size: 12px;
+}
+.reward-tier-card p {
+  font-size: 14px;
+  margin: 12px 0 8px;
+}
+@media (max-width: 650px) {
+  .rewards-page {
+    padding: 32px 0 48px;
+  }
+  .rewards-page .rewards-heading {
+    display: grid;
+    gap: 24px;
+  }
+  .scorebook-rate {
+    border-left: 0;
+    border-top: 1px solid var(--score-line);
+    padding: 20px 0 0;
+    gap: 8px;
+  }
+  .scorebook-rate strong {
+    font-size: 36px;
+  }
+  .rewards-page .rewards-heading p {
+    font-size: 14px;
+  }
+  .rewards-page .points-leaderboard {
+    padding: 20px 16px;
+  }
+  .rewards-page .points-leaderboard td {
+    padding: 16px 8px;
+    font-size: 12px;
+  }
+  .rewards-page .reward-signin {
+    grid-template-columns: auto 1fr;
+    padding: 24px;
+  }
+  .rewards-page .reward-signin button {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .rewards-page .reward-signin > svg {
+    grid-row: 1;
+  }
+  .rewards-page .reward-signin p {
+    grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rewards-page button {
+    transition: none;
+  }
+}

@@ -1,0 +1,9 @@
+[workspace]
+members = ["contracts/mpc-probe", "contracts/jackpot-session", "contracts/fee-vault", "contracts/demo-usdc", "contracts/fee-receipts", "contracts/contributor-dao"]
+resolver = "2"
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+panic = "abort"
+overflow-checks = true

@@ -1,0 +1,148 @@
+.crank-control {
+  position: absolute;
+  right: 8px;
+  top: 27%;
+  width: 102px;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: #c4caa9;
+  user-select: none;
+}
+.crank-heading {
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  font-weight: 800;
+  color: #e2c781;
+}
+.crank-wheel {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: grab;
+  background: radial-gradient(circle at 32% 25%, #7772491f, #141b11dd 72%);
+  box-shadow: 0 5px 20px #0005;
+  transition:
+    box-shadow 0.2s,
+    background 0.2s;
+}
+.crank-wheel:hover,
+.crank-wheel:focus-visible {
+  box-shadow:
+    0 0 0 1px #e8c66b88,
+    0 0 25px #f3c75b22;
+  outline: none;
+}
+.is-grabbed .crank-wheel {
+  cursor: grabbing;
+  box-shadow:
+    0 0 0 1px #f5d782,
+    0 0 30px #f3c75b38;
+}
+.crank-wheel svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.crank-outer {
+  fill: none;
+  stroke: #cfbd7d;
+  stroke-width: 3;
+}
+.crank-inner {
+  fill: #10170d;
+  stroke: #766c49;
+  stroke-width: 1;
+}
+.crank-notch {
+  fill: none;
+  stroke: #c8b67b;
+  stroke-width: 1.6;
+}
+.crank-spokes {
+  fill: none;
+  stroke: #afa16a;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+.crank-hub {
+  fill: #252c1c;
+  stroke: #dac989;
+  stroke-width: 2;
+}
+.crank-grip {
+  fill: #f5cf62;
+  stroke: #fff0b5;
+  stroke-width: 2;
+  filter: drop-shadow(0 2px 5px #0008);
+}
+.crank-shine {
+  fill: #fff5c7;
+  opacity: 0.8;
+}
+.crank-meter {
+  height: 3px;
+  width: 60px;
+  background: #ffffff16;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.crank-meter span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #f5cf62;
+  border-radius: 2px;
+}
+.crank-rpm {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: #f2db9a;
+}
+.crank-hint {
+  font-size: 9px;
+  text-align: center;
+  color: #a8b098;
+  line-height: 1.5;
+}
+.crank-control.is-locked {
+  opacity: 0.55;
+}
+.crank-control.is-locked .crank-wheel {
+  cursor: default;
+  box-shadow: none;
+}
+@media (max-width: 600px) {
+  .crank-control {
+    right: 0;
+    top: 22%;
+    width: 75px;
+    gap: 4px;
+  }
+  .crank-wheel {
+    width: 66px;
+    height: 66px;
+  }
+  .crank-heading {
+    font-size: 7px;
+    letter-spacing: 0.07em;
+  }
+  .crank-hint {
+    font-size: 8px;
+  }
+  .crank-meter {
+    width: 46px;
+  }
+  .crank-rpm {
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crank-wheel {
+    transition: none;
+  }
+}

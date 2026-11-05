@@ -1,0 +1,1 @@
+{"version":"rascals-demo-v1","description":"Disclosed deterministic evidence heuristic. It does not prove contribution quality or economic impact.","base_percent":20,"sensitive_runtime_percent":30,"tests_percent":20,"runtime_percent":15,"ci_percent":10,"docs_only_percent":5,"max_percent":100,"max_changed_files":100,"required_repository":"nvq2309/therascals"}

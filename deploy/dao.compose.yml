@@ -1,0 +1,26 @@
+# Candidate only. Starting this on the live host requires owner approval.
+# Kept separate so ordinary arcade deployments cannot expose the testnet UI.
+services:
+  contributor-dao:
+    image: rascals-dao:launch-candidate-20261104
+    build:
+      context: ..
+      dockerfile: deploy/dao.Dockerfile
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:4321:4321"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

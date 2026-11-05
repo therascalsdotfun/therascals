@@ -1,0 +1,46 @@
+# One public process per volume is enforced by the app itself (it takes an
+# OS-backed lock and refuses a second), so this file deliberately has no
+# replicas.
+#
+# Both services use the host network on purpose. If the API were published with
+# `ports:`, connections from Caddy would arrive from the docker bridge gateway
+# rather than 127.0.0.1, `JACKPOT_TRUST_PROXY=1` would not match the proxy, and
+# Fastify would ignore X-Forwarded-For — collapsing every player into one shared
+# rate-limit budget. Loopback in the host namespace is what the app's documented
+# single-host proxy layout actually expects.
+services:
+  jackpot:
+    image: jackpot:public
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: jackpot
+    restart: unless-stopped
+    init: true
+    network_mode: host
+    env_file: .env
+    environment:
+      # The image defaults to 0.0.0.0 for ordinary bridge publishing. On the host
+      # network that would expose the raw API to the internet, bypassing TLS and
+      # the proxy trust rule.
+      HOST: 127.0.0.1
+    volumes:
+      - jackpot-state:/app/.data
+    # Sized for an 8 GB host carrying four similar apps: ~2 GB for OS/Docker/Caddy
+    # leaves 1.5 GB each, against Jackpot's measured ~1,205 MB RSS at a 40k catalog.
+    # cpus is 1.0 because the catalog path is CPU work on one Node thread — more
+    # cores would not speed it up, and 4 x 1.0 keeps four apps off each other.
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1536m
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  jackpot-state:
+    name: jackpot-state

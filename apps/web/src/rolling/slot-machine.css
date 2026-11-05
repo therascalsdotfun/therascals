@@ -1,0 +1,316 @@
+.slot-cabinet {
+  --gold: #f5cc65;
+  --gold-dark: #806127;
+  --red: #9d261e;
+  position: relative;
+  width: 100%;
+  max-width: 690px;
+  margin: 0 auto;
+  padding: 22px 27px 14px;
+  border: 3px solid #d9aa48;
+  border-radius: 28px 28px 20px 20px;
+  background: linear-gradient(130deg, #4c2015, #251a10 40%, #571d14);
+  box-shadow:
+    inset 0 0 0 4px #271a0c,
+    inset 0 0 0 6px #a47c35,
+    0 15px 40px #0006;
+  color: #ffe7a5;
+}
+.slot-bulbs {
+  position: absolute;
+  inset: 8px 14px auto;
+  display: flex;
+  justify-content: space-around;
+  pointer-events: none;
+}
+.slot-bulbs i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffdc79;
+  box-shadow: 0 0 9px #ffc751aa;
+}
+.slot-cabinet.is-spinning .slot-bulbs i {
+  animation: slot-bulb 0.8s steps(2, end) infinite;
+  animation-delay: calc(var(--bulb) * -0.08s);
+}
+.slot-marquee {
+  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 3px 0 14px;
+}
+.slot-marquee > span {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: #d9ac58;
+}
+.slot-marquee > strong {
+  font-family: var(--marquee);
+  font-size: clamp(27px, 4vw, 46px);
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #ffdf7a;
+  text-shadow:
+    0 2px 0 #733918,
+    0 4px 0 #30180e;
+  line-height: 1.25;
+}
+.slot-marquee strong span {
+  color: #ec6a39;
+  font-size: 0.7em;
+  margin-left: 7px;
+}
+.slot-marquee > small {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: #e5c48b;
+}
+.slot-reel-labels {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 9px;
+  font-weight: 750;
+  text-align: center;
+  color: #e4bc65;
+  letter-spacing: 1px;
+}
+.slot-windows {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 10px;
+  position: relative;
+}
+.slot-window {
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+  border: 3px solid #b88433;
+  border-radius: 13px;
+  background: #f2e6c8;
+  box-shadow:
+    inset 0 15px 25px #44341c77,
+    inset 0 -15px 25px #44341c77,
+    0 3px 0 #160d08;
+  isolation: isolate;
+}
+.slot-window::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    #3b2a1ba6,
+    transparent 25%,
+    transparent 75%,
+    #3b2a1ba6
+  );
+}
+.slot-reel-track {
+  position: absolute;
+  inset: 0;
+}
+.slot-symbol {
+  height: 150px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(calc(-50% + var(--reel-y) * 150px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #312312;
+  will-change: transform;
+}
+.slot-symbol .brand-icon {
+  margin: 0;
+}
+.slot-symbol > strong {
+  font-size: clamp(14px, 2.2vw, 25px);
+  font-weight: 850;
+  max-width: 95%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.8px;
+}
+.slot-symbol > small {
+  font-size: 7px;
+  font-weight: 700;
+  color: #786340;
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+.slot-symbol > svg:not(.chain-logo) {
+  color: #8e641c;
+}
+.slot-symbol > strong.slot-money {
+  font-size: 46px;
+  line-height: 1;
+}
+.slot-payline {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid #d94c2e50;
+  pointer-events: none;
+  z-index: 3;
+}
+.slot-reel-status {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #9c2420;
+  z-index: 4;
+}
+.reel-stopped {
+  border-color: #f8d06b;
+  box-shadow:
+    0 0 0 1px #fff0bd,
+    0 0 20px #ffc94a33;
+}
+.slot-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 10px;
+  margin-top: 14px;
+  min-height: 22px;
+  color: #f7d28a;
+}
+.slot-bottom > span {
+  flex: 1;
+  min-width: 0;
+}
+.slot-bottom > b {
+  font-size: 7px;
+  letter-spacing: 1px;
+  border: 1px solid #b57e37;
+  padding: 4px 5px;
+  border-radius: 4px;
+  color: #f9d58d;
+}
+.full-degen-layout .machine {
+  height: auto;
+  min-height: 370px;
+  padding: 18px 0 8px;
+}
+.full-degen-layout .roll-picker .degen-mode[aria-pressed="true"] {
+  color: #ffdb75;
+  border-color: #d8ac4b99;
+  background: #b87c1629;
+}
+.full-degen-layout .cage-actions .test-buy {
+  background: #ffd269;
+  border-color: #ffe8a1;
+  color: #42200b;
+  box-shadow:
+    0 4px 0 #a16a1c,
+    0 9px 30px #ffb52140;
+}
+.full-degen-layout .cage-actions .test-buy:hover:not(:disabled) {
+  background: #ffe49b;
+}
+.full-degen-layout .play-action:not(:disabled)::before {
+  box-shadow: 0 0 20px 2px #ffbf485c;
+}
+.full-degen-layout .cage-actions .test-buy:disabled {
+  background: #54412b;
+  color: #b9a377;
+  border-color: #806239;
+}
+@keyframes slot-bulb {
+  50% {
+    opacity: 0.35;
+    box-shadow: none;
+  }
+}
+@media (max-width: 700px) {
+  .slot-cabinet {
+    padding: 21px 13px 12px;
+    border-radius: 22px 22px 17px 17px;
+  }
+  .slot-window {
+    height: 174px;
+    border-width: 2px;
+  }
+  .slot-windows,
+  .slot-reel-labels {
+    gap: 5px;
+  }
+  .slot-symbol {
+    gap: 7px;
+  }
+  .slot-symbol > strong {
+    font-size: 16px;
+  }
+  .slot-symbol > strong.slot-money {
+    font-size: 34px;
+  }
+  .slot-symbol > svg {
+    max-width: 37px;
+  }
+  .slot-symbol .token-image {
+    width: 46px !important;
+    height: 46px !important;
+  }
+  .slot-symbol > small {
+    font-size: 6px;
+    letter-spacing: 0;
+  }
+  .slot-reel-labels {
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
+  .slot-bottom {
+    font-size: 9px;
+  }
+  .full-degen-layout .machine {
+    min-height: 330px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot-cabinet .slot-bulbs i {
+    animation: none;
+  }
+  .slot-symbol {
+    will-change: auto;
+  }
+}
+.slot-amount-note {
+  font-size: 11px;
+  color: #edc978;
+  line-height: 1.6;
+  margin: 0 0 10px;
+  grid-column: 1/-1;
+}
+.full-degen-layout .draw-settings .trade-mode {
+  grid-column: 1/-1;
+}
+.full-degen-layout .draw-settings .trade-mode-note {
+  grid-column: 1/-1;
+}
+.trade-mode[hidden],
+.trade-mode-note[hidden] {
+  display: none;
+}
+.chain-tag {
+  display: inline-block;
+  font-size: 8px;
+  color: var(--muted);
+  margin-left: 4px;
+}

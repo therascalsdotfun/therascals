@@ -1,0 +1,25 @@
+.dex-pair-chart {
+  display: block;
+  width: 100%;
+  height: 520px;
+  min-width: 0;
+  border: 1px solid #c7bad6;
+  border-radius: 12px;
+  background: #fff;
+}
+.chart-provider-note,
+.chart-entry-receipt {
+  color: #65546f;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .dex-pair-chart {
+    height: 440px;
+  }
+  .source-chart .chart-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}

@@ -1,0 +1,445 @@
+import { useId, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { FilterSpec } from "../../../packages/shared/src/market.ts";
+import {
+  DISCOVERY_PRESETS,
+  discoveryPreset,
+  presetFor,
+} from "../../../packages/shared/src/discovery-presets.ts";
+import { filterInput } from "./filter-input.ts";
+import {
+  filterMilestones,
+  milestonePosition,
+  milestoneValue,
+  milestoneLabel,
+} from "./filter-milestones.ts";
+import "./filter-settings.css";
+import { FilterCodePanel } from "./FilterCodePanel.tsx";
+
+const criteria = [
+  {
+    key: "poolSize",
+    label: "Coins in the cage",
+    min: 2,
+    max: 32,
+    unit: "coins",
+  },
+  {
+    key: "minAgeMinutes",
+    label: "Minimum age",
+    min: 0,
+    max: 1440,
+    unit: "min",
+  },
+  {
+    key: "maxAgeMinutes",
+    label: "Maximum age",
+    min: 0,
+    max: 1440,
+    unit: "min",
+  },
+  {
+    key: "minMarketCap",
+    label: "Minimum market cap",
+    min: 0,
+    max: 99999999,
+    unit: "USD",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "maxMarketCap",
+    label: "Maximum market cap",
+    min: 0,
+    max: 99999999,
+    unit: "USD",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "minLiquidity",
+    label: "Minimum liquidity",
+    min: 0,
+    max: 1000000000000,
+    unit: "USD",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "minVolume5m",
+    label: "Minimum 5m volume",
+    min: 0,
+    max: 1000000000000,
+    unit: "USD",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "minBuys5m",
+    label: "Minimum 5m buys",
+    min: 0,
+    max: 1000000000000,
+    unit: "buys",
+    log: true,
+  },
+  {
+    key: "minSells5m",
+    label: "Minimum 5m sells",
+    min: 0,
+    max: 1000000000000,
+    unit: "sells",
+    log: true,
+  },
+  {
+    key: "minHolders",
+    label: "Minimum holders",
+    min: 0,
+    max: 1000000000000,
+    unit: "holders",
+    log: true,
+  },
+  {
+    key: "maxLiquidity",
+    label: "Maximum liquidity",
+    min: 0,
+    max: 1e12,
+    unit: "USD",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "maxVolume5m",
+    label: "Maximum 5m volume",
+    min: 0,
+    max: 1e12,
+    unit: "USD",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "maxBuys5m",
+    label: "Maximum 5m buys",
+    min: 0,
+    max: 1e12,
+    unit: "buys",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "maxSells5m",
+    label: "Maximum 5m sells",
+    min: 0,
+    max: 1e12,
+    unit: "sells",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "maxHolders",
+    label: "Maximum holders",
+    min: 0,
+    max: 1e12,
+    unit: "holders",
+    log: true,
+    optional: true,
+  },
+  {
+    key: "minBuyShare5m",
+    label: "Minimum 5m buy share",
+    min: 0,
+    max: 100,
+    unit: "%",
+    optional: true,
+  },
+  {
+    key: "maxBuyShare5m",
+    label: "Maximum 5m buy share",
+    min: 0,
+    max: 100,
+    unit: "%",
+    optional: true,
+  },
+] as const;
+
+export function FilterSettings({
+  value,
+  onChange,
+  children,
+}: {
+  value: FilterSpec;
+  onChange: (next: FilterSpec) => void;
+  children?: ReactNode;
+}) {
+  const prefix = useId(),
+    preset = presetFor(value);
+  const presetIndex = DISCOVERY_PRESETS.findIndex((p) => p.id === preset);
+  function choosePreset(index: number) {
+    const p =
+      DISCOVERY_PRESETS[
+        (index + DISCOVERY_PRESETS.length) % DISCOVERY_PRESETS.length
+      ];
+    onChange({
+      ...discoveryPreset(p.id, value.memeTypes),
+      chains: value.chains,
+      tokenSelection: value.tokenSelection,
+    });
+  }
+  const presetName =
+    preset === "broad"
+      ? "Loose"
+      : preset === "tight"
+        ? "Tight"
+        : preset === "strict"
+          ? "Balanced"
+          : "Custom";
+  return (
+    <div className="filter-settings">
+      <FilterCodePanel value={value} onChange={onChange} />
+      <div className="settings-preset">
+        <div>
+          <span className="settings-eyebrow">YOUR PLAY STYLE</span>
+          <label htmlFor={`${prefix}-preset`}>Preset</label>
+        </div>
+        <div className="settings-preset-control">
+          <button
+            type="button"
+            aria-label="Previous filter preset"
+            onClick={() =>
+              choosePreset((presetIndex < 0 ? 1 : presetIndex) - 1)
+            }
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <select
+            id={`${prefix}-preset`}
+            aria-label="Filter preset"
+            value={preset}
+            onChange={(e) =>
+              choosePreset(
+                DISCOVERY_PRESETS.findIndex((p) => p.id === e.target.value),
+              )
+            }
+          >
+            <option value="broad">Loose</option>
+            <option value="strict">Balanced</option>
+            <option value="tight">Tight</option>
+            <option value="custom" disabled>
+              Custom
+            </option>
+          </select>
+          <button
+            type="button"
+            aria-label="Next filter preset"
+            onClick={() =>
+              choosePreset((presetIndex < 0 ? 1 : presetIndex) + 1)
+            }
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+        <div className="settings-preset-track" aria-hidden="true">
+          {DISCOVERY_PRESETS.map((p) => (
+            <i key={p.id} className={preset === p.id ? "active" : ""} />
+          ))}
+        </div>
+      </div>
+      <p className="settings-caption" aria-live="polite">
+        {presetName === "Custom"
+          ? "Your own mix. Apply when you’re ready."
+          : `${presetName} preset · tweak any setting to make it yours.`}
+      </p>
+      <p className="settings-caption">
+        Buy share is buys ÷ (buys + sells), using transaction counts, not traded
+        dollars. It requires a complete reported 5m window. Limits needing
+        unavailable data exclude the token; holder coverage varies by chain.
+      </p>
+      <div className="settings-rows">
+        {criteria.map((c) => {
+          const id = `${prefix}-${c.key}`,
+            optional = "optional" in c && c.optional;
+          const lowerKey = c.key.replace(/^max/, "min") as keyof FilterSpec;
+          const upperKey = c.key.replace(/^min/, "max") as keyof FilterSpec;
+          const min = c.key.startsWith("max")
+            ? Number(value[lowerKey] ?? c.min)
+            : c.min;
+          const max = c.key.startsWith("min")
+            ? Number(value[upperKey] ?? c.max)
+            : c.max;
+          const current =
+            value[c.key] ??
+            (c.key === "poolSize" ? 8 : c.key.startsWith("max") ? c.max : 0);
+          const stops = filterMilestones(c.key);
+          const from = milestonePosition(min, stops);
+          const to = milestonePosition(max, stops);
+          const ticks = stops.filter((n) => n >= min && n <= max);
+          const numeric = value[c.key] ?? (c.key === "poolSize" ? 8 : null);
+          const text =
+            numeric === null ? "Any" : `${numeric.toLocaleString()} ${c.unit}`;
+          return (
+            <div className="setting-row" key={c.key}>
+              <label htmlFor={id}>{c.label}</label>
+              <div className="setting-value">
+                <input
+                  id={id}
+                  aria-label={`${c.label} value`}
+                  type="number"
+                  min={min}
+                  max={max}
+                  step={1}
+                  required={!optional}
+                  placeholder="Any"
+                  value={numeric ?? ""}
+                  onChange={(e) =>
+                    onChange({
+                      ...value,
+                      [c.key]: filterInput(c.key, e.target.value),
+                    })
+                  }
+                />
+                <span>{c.unit}</span>
+              </div>
+              <div className="setting-slider">
+                <div className="setting-slider-scale">
+                  <input
+                    type="range"
+                    aria-label={`${c.label} slider`}
+                    aria-valuetext={text}
+                    min={from}
+                    max={to}
+                    step="any"
+                    value={milestonePosition(current, stops)}
+                    onKeyDown={(e) => {
+                      const direction = ["ArrowRight", "ArrowUp"].includes(
+                        e.key,
+                      )
+                        ? 1
+                        : ["ArrowLeft", "ArrowDown"].includes(e.key)
+                          ? -1
+                          : 0;
+                      if (!direction) return;
+                      e.preventDefault();
+                      const step =
+                        "log" in c
+                          ? Math.max(1, Math.round(current * 0.05))
+                          : 1;
+                      onChange({
+                        ...value,
+                        [c.key]: Math.max(
+                          min,
+                          Math.min(max, current + direction * step),
+                        ),
+                      });
+                    }}
+                    onChange={(e) =>
+                      onChange({
+                        ...value,
+                        [c.key]: Math.max(
+                          min,
+                          Math.min(
+                            max,
+                            milestoneValue(Number(e.target.value), stops),
+                          ),
+                        ),
+                      })
+                    }
+                  />
+                  <div
+                    className="setting-milestones"
+                    aria-label={`${c.label} milestones`}
+                  >
+                    {ticks.map((n, index) => {
+                      const position =
+                        to === from
+                          ? 0
+                          : (100 * (milestonePosition(n, stops) - from)) /
+                            (to - from);
+                      return (
+                        <span
+                          key={n}
+                          className={`setting-milestone lane-${index % 2}`}
+                          style={{ left: `${position}%` }}
+                          data-edge={
+                            position < 5
+                              ? "start"
+                              : position > 95
+                                ? "end"
+                                : undefined
+                          }
+                        >
+                          <i aria-hidden="true" />
+                          {milestoneLabel(c.key, n)}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+                {optional && (
+                  <button
+                    type="button"
+                    className="setting-clear"
+                    disabled={numeric === null}
+                    aria-label={`Clear ${c.label.toLowerCase()} limit`}
+                    onClick={() => onChange({ ...value, [c.key]: null })}
+                  >
+                    Any
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        <div className="setting-row setting-choice">
+          <label htmlFor={`${prefix}-age`}>Age measured from</label>
+          <select
+            id={`${prefix}-age`}
+            value={value.ageBasis}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                ageBasis: e.target.value as FilterSpec["ageBasis"],
+              })
+            }
+          >
+            <option value="first_pool">First liquidity pool</option>
+            <option value="mint">Token creation</option>
+          </select>
+        </div>
+        <div className="setting-row setting-choice">
+          <label htmlFor={`${prefix}-x`}>Require an X link</label>
+          <input
+            id={`${prefix}-x`}
+            type="checkbox"
+            checked={value.hasX}
+            onChange={(e) => onChange({ ...value, hasX: e.target.checked })}
+          />
+        </div>
+        <div className="setting-row setting-choice">
+          <label htmlFor={`${prefix}-telegram`}>Require a Telegram link</label>
+          <input
+            id={`${prefix}-telegram`}
+            type="checkbox"
+            checked={value.hasTelegram ?? false}
+            onChange={(e) =>
+              onChange({ ...value, hasTelegram: e.target.checked })
+            }
+          />
+        </div>
+        <div className="setting-row setting-choice">
+          <label htmlFor={`${prefix}-website`}>Require a website</label>
+          <input
+            id={`${prefix}-website`}
+            type="checkbox"
+            checked={value.hasWebsite}
+            onChange={(e) =>
+              onChange({ ...value, hasWebsite: e.target.checked })
+            }
+          />
+        </div>
+      </div>
+      <div className="settings-themes">
+        <h3>Meme themes</h3>
+        {children}
+      </div>
+    </div>
+  );
+}

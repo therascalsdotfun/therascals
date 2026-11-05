@@ -1,0 +1,342 @@
+.mainnet-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.mainnet-panel-heading h2 {
+  font-size: 18px;
+  margin: 0;
+  flex: 1;
+}
+.mainnet-panel-heading > span {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: #a8bd86;
+  background: #c5e68810;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.mainnet-route-tabs {
+  display: flex;
+  gap: 5px;
+  border-bottom: 1px solid #ffffff12;
+  margin: 0 0 20px;
+  padding-bottom: 10px;
+}
+.mainnet-route-tabs button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 0;
+  background: transparent;
+  color: #899780;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 7px;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.mainnet-route-tabs button[aria-pressed="true"] {
+  color: #d6f15c;
+  background: #d6f15c13;
+}
+.mainnet-field {
+  display: block;
+  font-size: 11px;
+  color: #a9b39e;
+  margin: 14px 0;
+}
+.mainnet-field > span {
+  float: right;
+}
+.mainnet-field input,
+.mainnet-field select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  background: #0f170e;
+  border: 1px solid #ffffff1f;
+  border-radius: 8px;
+  color: #eef1e8;
+  padding: 12px;
+  font-size: 13px;
+  margin-top: 6px;
+  min-width: 0;
+}
+.mainnet-field input:focus,
+.mainnet-field select:focus {
+  outline: 1px solid #d6f15c;
+}
+.intents-operation {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #ffffff16;
+}
+.intents-operation strong {
+  display: block;
+  font-size: 16px;
+  margin: 10px 0;
+}
+.intents-operation dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 10px 0;
+  font-size: 11px;
+}
+.intents-operation dt {
+  color: #8f9c84;
+  flex-shrink: 0;
+}
+.intents-operation dd {
+  text-align: right;
+  margin: 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.intents-operation code,
+.intents-live-steps code,
+.mainnet-receipt code {
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  font-size: 10px;
+}
+.intents-live-steps {
+  font-size: 12px;
+  margin: 18px 0;
+  padding-left: 22px;
+}
+.intents-live-steps li {
+  margin: 12px 0;
+  color: #a9b79c;
+}
+.intents-live-steps li.done {
+  color: #d6f15c;
+}
+.intents-live-steps li > a {
+  display: block;
+  color: #bcd29c;
+}
+.quote-verified {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #b2ce8c;
+  font-size: 10px;
+}
+.route-unavailable {
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 10px;
+  border-radius: 7px;
+  color: #e5c58b;
+  background: #e5c58b0b;
+}
+.mainnet-trading .primary {
+  width: 100%;
+  justify-content: center;
+  margin: 8px 0;
+}
+.mainnet-trading .text-link {
+  margin: 9px 0;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.mainnet-connect {
+  padding: 12px 0;
+}
+.mainnet-connect p {
+  font-size: 12px;
+}
+.jupiter-dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 90dvh;
+}
+.jupiter-dialog #jackpot-jupiter-plugin {
+  min-height: 440px;
+}
+.mainnet-receipt {
+  display: block;
+  margin: 12px 0;
+  color: #d6f15c;
+  font-size: 12px;
+}
+.mainnet-receipt code {
+  display: block;
+  margin-top: 5px;
+}
+.mainnet-history {
+  margin-top: 28px;
+}
+.mainnet-history a {
+  display: block;
+  padding: 12px 0;
+  color: #b9cf9d;
+  border-bottom: 1px solid #ffffff14;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.intents-preview,
+.intents-recovery {
+  margin-top: 18px;
+  border-top: 1px solid #ffffff16;
+  padding-top: 14px;
+  font-size: 12px;
+}
+.intents-preview summary,
+.intents-recovery summary {
+  cursor: pointer;
+  color: #b9cf9d;
+}
+.intents-preview .intents-quote {
+  margin-top: 15px;
+}
+.evm-trade {
+  color: #302d42;
+  background: #f8f0d7;
+  border: 2px solid #4d4355;
+  border-radius: 18px 13px 17px 12px;
+  padding: 18px;
+  box-shadow: 4px 4px 0 #d9c7a5;
+}
+.evm-trade-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.evm-trade-heading > svg {
+  width: 24px;
+  height: 24px;
+}
+.evm-trade-heading > span {
+  margin-left: auto;
+  font-size: 12px;
+  background: #ffdb70;
+  padding: 5px 8px;
+  border-radius: 8px;
+}
+.evm-trade .disclosure,
+.evm-trade small {
+  color: #65516c;
+  line-height: 1.6;
+}
+.evm-trade .primary {
+  background: #ffd35b;
+  color: #302d42;
+  border: 2px solid #302d42;
+  box-shadow: 3px 3px 0 #9b7654;
+  justify-content: center;
+  gap: 8px;
+}
+.evm-trade .secondary {
+  background: #e8ddf2;
+  color: #41344b;
+  border: 1.5px solid #7e6790;
+  box-shadow: 2px 2px 0 #c6b1d2;
+  justify-content: center;
+  gap: 8px;
+}
+.evm-trade button svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+.evm-trade-steps {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.evm-trade-steps li {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #e9e3e2;
+  border: 1px solid #c3b6c4;
+}
+.evm-trade-steps li[data-complete="true"] {
+  background: #ddedc6;
+  border-color: #89ac73;
+}
+.evm-trade-steps li > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.evm-trade-steps small,
+.evm-trade-steps code {
+  display: block;
+}
+.evm-trade-steps code {
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  margin-top: 4px;
+  color: #695779;
+}
+.evm-quote-facts {
+  display: grid;
+  gap: 8px;
+}
+.evm-quote-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+}
+.evm-quote-facts dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.evm-trade-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.evm-recovery {
+  padding: 12px;
+  background: #ffe1b3;
+  border: 1px solid #bb8755;
+  border-radius: 10px;
+}
+.evm-recovery input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 6px 0;
+  color: #302d42;
+  background: #fff8e9;
+  padding: 10px;
+  border: 1px solid #a696ab;
+}
+.evm-recovery button {
+  margin: 6px 8px 0 0;
+}
+.preflight-status {
+  padding: 10px;
+  border: 1px solid #918663;
+  background: #f5edcf;
+  color: #302d42;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .evm-trade button {
+    transition:
+      transform 0.15s ease,
+      background 0.2s ease;
+  }
+  .evm-trade button:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+  .evm-trade button:not(:disabled):active {
+    transform: translateY(1px);
+  }
+}

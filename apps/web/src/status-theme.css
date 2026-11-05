@@ -1,0 +1,124 @@
+/* Semantic foreground/background pairs for the paper theme, including dialogs. */
+:root {
+  --status-info-bg: #eee7f8;
+  --status-info-ink: #514163;
+  --status-info-border: #c8b7d9;
+  --status-success-bg: #e1edd8;
+  --status-success-ink: #35513d;
+  --status-success-border: #adc59b;
+  --status-error-bg: #fff0ed;
+  --status-error-ink: #883c43;
+  --status-error-border: #d8a4a5;
+  --status-warning-bg: #fff2cf;
+  --status-warning-ink: #695021;
+  --status-warning-border: #c4ac73;
+}
+.wallet-brand-icon {
+  display: block;
+  flex-shrink: 0;
+  margin: 0;
+}
+.wallet-logo > svg {
+  margin: 0;
+}
+.wallet-request-status,
+.wallet-resume,
+.wallet-auth-explainer,
+.chain-provider-status {
+  background: var(--status-info-bg);
+  color: var(--status-info-ink);
+  border-color: var(--status-info-border);
+}
+.wallet-request-status :is(strong, p, small),
+.wallet-resume :is(strong, p, small),
+.wallet-auth-explainer :is(strong, p, small) {
+  color: var(--status-info-ink);
+}
+.wallet-account-info .verified-badge,
+.quote-verified {
+  background: var(--status-success-bg);
+  color: var(--status-success-ink);
+  border-color: var(--status-success-border);
+}
+.wallet-request-error,
+.intents-error,
+.evm-error,
+.reward-error,
+.promote-error,
+.error {
+  background: var(--status-error-bg);
+  color: var(--status-error-ink);
+  border-color: var(--status-error-border);
+}
+.wallet-request-error :is(p, strong, small),
+.intents-error :is(p, strong, small),
+.evm-error :is(p, strong, small),
+.reward-error :is(p, strong, small),
+.promote-error :is(p, strong, small) {
+  color: var(--status-error-ink);
+}
+.wallet-request-error :is(a, .text-link),
+.wallet-request-status :is(a, .text-link),
+.intents-error :is(a, .text-link),
+.evm-error :is(a, .text-link),
+.reward-error :is(a, .text-link),
+.promote-error :is(a, .text-link) {
+  color: var(--accent);
+}
+.wallet-request-error .secondary {
+  background: var(--paper);
+  color: var(--status-error-ink);
+  border-color: var(--status-error-border);
+}
+.preflight-status,
+.renderer-fallback-note {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-ink);
+  border-color: var(--status-warning-border);
+}
+.renderer-fallback-note button {
+  background: var(--paper);
+  color: var(--status-warning-ink);
+  border-color: var(--status-warning-border);
+}
+.renderer-fallback-note button:hover {
+  background: var(--status-warning-bg);
+}
+.step-artifact pre {
+  color: var(--ink);
+  background: var(--paper);
+}
+/* Account/network metadata must remain readable at its smaller text size. */
+.wallet-option :is(p, small),
+.wallet-connections > .disclosure {
+  color: #66556f;
+}
+/* Risk/route notices use the same explicit pairs as wallet and trade status. */
+.risk-checked,
+.promote-saved {
+  color: var(--status-success-ink);
+  background: var(--status-success-bg);
+  border-color: var(--status-success-border);
+}
+.risk-flagged {
+  color: var(--status-error-ink);
+  background: var(--status-error-bg);
+  border-color: var(--status-error-border);
+}
+.risk-stale,
+.risk-pending,
+.risk-unavailable,
+.route-unavailable {
+  color: var(--status-warning-ink);
+  background: var(--status-warning-bg);
+  border-color: var(--status-warning-border);
+}
+/* The mainnet approval notice inherited pale ink from the former dark theme. */
+.discovery-notice {
+  color: var(--status-info-ink);
+  background: var(--status-info-bg);
+  border-color: var(--status-info-border);
+}
+.discovery-notice :is(b, svg, button) {
+  color: var(--status-info-ink);
+}

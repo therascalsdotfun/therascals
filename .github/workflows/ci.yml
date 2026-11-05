@@ -1,0 +1,51 @@
+name: Verify MVP
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --locked
+
+  contributor-dao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown,wasm32-wasip2
+      - uses: Swatinem/rust-cache@v2
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm dao:build
+      - run: cargo test --locked -p rascals-contributor-dao
+      - run: pnpm dao:contract:build
+      - run: cargo test --manifest-path workers/contributor-verdict/Cargo.toml --locked
+      - run: python3 -m unittest discover -s workers/contributor-verdict/tests -p 'test_*.py'
+      - run: pnpm dao:worker:build

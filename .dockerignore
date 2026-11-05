@@ -1,0 +1,25 @@
+.git
+node_modules
+dist
+.credentials
+.data
+.superpowers
+.tools
+.gstack
+.env
+.env.*
+*.log
+artifacts
+target/*
+!target/wasm32-unknown-unknown
+target/wasm32-unknown-unknown/*
+!target/wasm32-unknown-unknown/release
+target/wasm32-unknown-unknown/release/*
+!target/wasm32-unknown-unknown/release/jackpot_session.wasm
+
+.local-dev/
+
+# DAO worker artifacts are built separately, never shipped with the public app.
+workers/**/target/
+workers/**/artifacts/
+**/__pycache__/

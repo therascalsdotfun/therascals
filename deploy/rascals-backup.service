@@ -1,0 +1,20 @@
+[Unit]
+Description=Rascals encrypted recovery backup
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/rascals/backup.env
+ExecStart=/opt/rascals/repo/deploy/backup.sh
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=20min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+RuntimeDirectory=rascals-backup
+RuntimeDirectoryMode=0700
+ReadWritePaths=/run/rascals-backup

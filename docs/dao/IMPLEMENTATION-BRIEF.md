@@ -1,0 +1,11 @@
+# Contributor DAO prototype — owner-directed, 2026-11-04
+
+Build a NEAR testnet-only governance/reward contract, a separate DAO UI, and an OutLayer-compatible verifier/verdict worker. Owner authorizes a local demo verdict agent (assistant/program/API) funded from a DAO-controlled finite agent budget. No live deployment or mainnet token economics are activated. Do not add fixtures/testing tools to the public app release; separate DAO UI supports real configured testnet and a local-only isolated demo server/store.
+
+Contract roles: council votes policy and agent configuration; bounded governance-authorized review requests bind repo/PR/merge SHA/beneficiary/agent/rubric/code identities; appointed verdict account submits one verdict per job; public challenge window; challenged decisions require council resolution; funded token claims use reservation accounting and failure-safe callbacks. Reward and agent-service token budgets are separate deposits via NEP141 receiver. No arbitrary signer, raw credential, founder withdrawal shortcut or public minting. All identity fields/integer limits and list sizes validated. Testnet guard remains explicit.
+
+Verdict importance: assigned agent returns score and rationale/evidence. Automated score is a disclosed program/agent judgment, not proof of objective quality. OutLayer worker should obtain real merged PR metadata from pinned configured repository, bind exact merge SHA and return source/evidence hash. Pinned code/rubric and request identity matter. Local program/manual demo mode must not claim TEE attestation or funded on-chain execution.
+
+Actual fee collection/conversion into funded protocol-token budgets is outside this prototype; only confirmed token deposits fund spendable balances. Proposal timing/quorum, recusal, replay protection, storage bounds, FT transfer failure recovery and pending state must have meaningful tests. No deployment keys in browser or files.
+
+UI must show network/contract/current account, treasury available/reserved/agent budgets, policy, proposal votes/timing, review verdict/evidence/challenges, and wallet approval to send on-chain actions. Local demo is loopback-only and explicit. Preserve Rascals paper/crayon identity with legible controls.

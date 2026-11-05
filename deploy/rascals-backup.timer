@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly Rascals backup
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=5min
+Persistent=true
+Unit=rascals-backup.service
+
+[Install]
+WantedBy=timers.target

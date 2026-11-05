@@ -1,0 +1,318 @@
+/* The same paper, ink, display faces and mascot used in the arcade. */
+:root {
+  --coral: var(--pink);
+  --lime: var(--yellow);
+  --line: #2d293925;
+  font-family: var(--display);
+}
+body {
+  background-color: #faf5e9;
+}
+.shell {
+  position: relative;
+}
+.shell.embedded .topbar {
+  display: none;
+}
+.shell main {
+  max-width: 1210px;
+  margin: 0 auto;
+  padding: 0 28px 42px;
+}
+.shell.embedded main {
+  padding: 0 16px 36px;
+}
+.topbar {
+  background: var(--paper);
+  border-bottom: 2px solid var(--ink);
+}
+.dao-brand-mascot {
+  width: 48px;
+  height: 48px;
+  transform: rotate(-7deg);
+}
+.brand b {
+  font-family: var(--display);
+  text-transform: lowercase;
+  font-size: 24px;
+}
+.hero {
+  min-height: 330px;
+  border: 2px solid var(--ink);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 5px 6px 0 #2d293918;
+  margin: 20px 0 24px;
+  padding: 0 30px;
+}
+.hero-copy {
+  padding: 32px 0;
+}
+.hero h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(42px, 4.5vw, 64px);
+  line-height: 1.04;
+}
+.hero h1 em {
+  color: var(--blue);
+}
+.hero-art {
+  height: 300px;
+  display: grid;
+  place-items: center;
+}
+.dao-rascal {
+  width: 255px;
+  height: 255px;
+  object-fit: contain;
+  transform: rotate(-7deg);
+  filter: drop-shadow(6px 8px 0 #2d293918);
+}
+.dao-build-sticker {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  padding: 9px 15px;
+  background: var(--yellow);
+  font-weight: 800;
+  transform: rotate(4deg);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.hero-bottom {
+  font-family: var(--hand);
+  background: var(--lilac);
+  border-top: 2px solid var(--ink);
+  margin: 0 -30px;
+  padding: 9px 25px;
+  letter-spacing: 0.03em;
+}
+.scribble {
+  font-family: var(--hand);
+  color: var(--ink);
+}
+.primary-button,
+.connect-button {
+  background: var(--blue);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.welcome-card {
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  background: var(--paper);
+}
+
+.testnet-connection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  margin: 18px 0 24px;
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 3px 4px 0 #2d293912;
+}
+.testnet-connection > div {
+  flex: 1;
+  min-width: 250px;
+}
+.testnet-connection p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.testnet-connection > a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--blue);
+  overflow-wrap: anywhere;
+}
+.testnet-connection button {
+  font-size: 13px;
+}
+.testnet-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 180px;
+  margin: 20px 0;
+}
+.contribution-program {
+  border: 2px solid var(--ink);
+  border-radius: 20px;
+  background: var(--paper);
+  padding: 25px;
+  box-shadow: 5px 6px 0 #2d293914;
+}
+.program-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+}
+.program-icon {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--yellow);
+  transform: rotate(-6deg);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.program-heading h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 29px;
+  line-height: 1.2;
+}
+.program-heading p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.program-heading a {
+  color: var(--blue);
+}
+.program-status {
+  margin-left: auto;
+  max-width: 260px;
+  padding: 8px 13px;
+  border: 1.5px solid var(--ink);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.program-status.ready {
+  background: var(--mint);
+}
+.program-status.waiting {
+  background: var(--yellow);
+}
+.program-intro {
+  max-width: 800px;
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 22px 0;
+  color: var(--muted);
+}
+.program-rules {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1.5px solid var(--line);
+  border-radius: 15px;
+  overflow: hidden;
+}
+.program-rules > div {
+  padding: 17px;
+  border-right: 1px solid var(--line);
+}
+.program-rules > div:last-child {
+  border-right: 0;
+}
+.program-rules span,
+.program-rules small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.program-rules strong {
+  display: block;
+  font: 800 28px/1.4 var(--display);
+  color: var(--blue);
+}
+.program-journey {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 24px 0;
+}
+.program-journey li {
+  display: grid;
+  grid-template-columns: 25px 1fr;
+  align-items: center;
+  gap: 7px;
+}
+.program-journey svg {
+  color: var(--blue);
+}
+.program-journey b {
+  font-size: 14px;
+}
+.program-journey span {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.program-live {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: #c9b8ee22;
+  margin: 20px 0;
+}
+.program-live p {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+.program-live span {
+  overflow-wrap: anywhere;
+}
+.program-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+}
+.program-actions > a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--blue);
+  font-size: 12px;
+}
+@media (max-width: 900px) {
+  .program-rules,
+  .program-journey {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .program-status {
+    margin-left: 0;
+  }
+}
+@media (max-width: 500px) {
+  .contribution-program {
+    padding: 16px;
+  }
+  .program-live {
+    grid-template-columns: 1fr;
+  }
+  .program-actions > a {
+    margin-left: 0;
+  }
+}
+

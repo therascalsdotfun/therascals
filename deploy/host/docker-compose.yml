@@ -1,0 +1,58 @@
+# Host-level edge for the whole box. This is deliberately NOT inside any
+# project's compose file: the shared proxy must outlive a restart of the first
+# tenant, otherwise deploying Jackpot would drop TLS for every other site.
+#
+# Bring this up once, before any project:
+#   docker compose -f /opt/rascals/host/docker-compose.yml up -d
+#
+# Every app listens on its own loopback port and is never published to 0.0.0.0.
+# Caddy is the only thing that accepts public connections, on 80/443.
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  # MoltExpert requires Postgres (DATABASE_URL is mandatory at boot). One shared
+  # server for all tenants, loopback-only, with its own volume.
+  postgres:
+    image: postgres:16-alpine
+    container_name: rascals-postgres
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    volumes:
+      - rascals-pg:/var/lib/postgresql/data
+      - ./secrets/pg_password:/run/secrets/pg_password:ro
+    # Shared by every tenant, so it must not be able to grow into the headroom
+    # the apps depend on. 512 MB is generous for a hackathon-scale dataset.
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  caddy-data:
+    name: caddy-data
+  caddy-config:
+    name: caddy-config
+  rascals-pg:
+    name: rascals-pg

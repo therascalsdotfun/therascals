@@ -1,0 +1,56 @@
+# Shared edge for every project on this box. One site block per tenant; reload
+# after editing without touching any app container:
+#   docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+#
+# Apps are never published to 0.0.0.0. Each listens on its own loopback port,
+# so a project that forgets to bind safely still cannot be reached from outside.
+#
+# Port allocation — keep these stable, they are the only shared namespace:
+#   4317 Jackpot / Rascals      4318 Boyun (MiroFish UI)
+#   4319 MoltExpert (Lyceum)    4320 bounded-options (not built yet)
+
+therascals.fun {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+	}
+	# Jackpot resolves the client from X-Forwarded-For only when the peer is a
+	# named proxy, and it trusts loopback. Overwrite rather than append so a
+	# client cannot seed its own prefix and mint extra rate-limit budget.
+	reverse_proxy 127.0.0.1:4317 {
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+boyun.therascals.fun {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+	}
+	# Boyun's simulation API has no accounts of its own. It stays off this
+	# public block on purpose: only the UI is proxied, and the API remains
+	# reachable from the container network, never from the internet.
+	reverse_proxy 127.0.0.1:4318 {
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+lyceum.therascals.fun {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+	}
+	# MoltExpert's own handoff requires the proxy to overwrite the forwarded
+	# client address; its auth origin must also match this exact hostname.
+	reverse_proxy 127.0.0.1:4319 {
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+
+# bounded-options: add its block here when it exists. Nothing else on this box
+# needs to change to accommodate it.

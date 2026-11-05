@@ -1,0 +1,353 @@
+.chain-picker {
+  border: 0;
+  padding: 0;
+  margin: 0 0 17px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.chain-picker legend {
+  display: flex;
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.chain-picker legend span {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.chain-picker label {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 45px;
+  height: 45px;
+  border: 1px solid #ffffff20;
+  border-radius: 13px;
+  background: #151b12;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.18s;
+}
+.chain-picker label > span {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+  opacity: 0.7;
+  filter: none;
+  transition:
+    opacity 0.2s,
+    filter 0.2s,
+    transform 0.2s;
+  pointer-events: none;
+}
+.chain-picker label:hover {
+  transform: translateY(-2px);
+  border-color: #d6f15c66;
+}
+.chain-picker label:has(input:checked) {
+  border-color: #d6f15c;
+  background: #c9ef4218;
+  box-shadow:
+    0 0 16px #c9ef4225,
+    inset 0 0 12px #c9ef4209;
+}
+.chain-picker label:has(input:checked) > span {
+  opacity: 1;
+  filter: none;
+  transform: scale(1.05);
+}
+.chain-picker label:has(input:focus-visible) {
+  outline: 2px solid #e7fa9a;
+  outline-offset: 4px;
+}
+.chain-picker label:active {
+  transform: scale(0.94);
+}
+.chain-picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.chain-picker label:has(input:disabled):not(:has(input:checked)) {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chain-picker label,
+  .chain-picker label > span {
+    transition: none;
+  }
+}
+.chain-logo {
+  display: inline-block;
+  margin: 0;
+  object-fit: contain;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.pool-mode {
+  display: flex;
+  gap: 5px;
+  padding: 4px;
+  background: #0e120d;
+  border-radius: 9px;
+}
+.pool-mode button {
+  flex: 1;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+.pool-mode button[aria-pressed="true"] {
+  background: #35432a;
+  color: var(--accent);
+}
+.pool-guidance,
+.pool-found p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.pool-editor-count {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 12px;
+  font-size: 12px;
+}
+.pool-editor-count span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.pool-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 20px;
+}
+.pool-chips > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  font-size: 10px;
+  background: #293321;
+  border: 1px solid #68764d55;
+  border-radius: 20px;
+}
+.pool-chips button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  padding: 4px;
+}
+.pool-search label {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.pool-search > input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.pool-search > div {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pool-search select {
+  flex: 1;
+  min-width: 0;
+  background: #11170e;
+  color: var(--text);
+  padding: 9px;
+  border: 1px solid #4c593e;
+  border-radius: 7px;
+  font-size: 11px;
+}
+.pool-lookup {
+  border: 1px solid #657a3e;
+  border-radius: 7px;
+  background: #35432a;
+  color: var(--accent);
+  padding: 9px 12px;
+  font-size: 11px;
+}
+.pool-found {
+  border: 1px solid #72874c;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 15px 0;
+  display: grid;
+  gap: 9px;
+}
+.pool-found small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.token-pool-editor section h3 {
+  font-size: 13px;
+  margin: 22px 0 8px;
+}
+.pool-token-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #ffffff0d;
+  padding: 11px 0;
+}
+.pool-token-name {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.pool-token-name strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.pool-token-name small {
+  color: var(--muted);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pool-token-name > span {
+  font-size: 9px;
+  color: var(--muted);
+}
+.pool-add,
+.pool-remove {
+  display: grid;
+  place-items: center;
+  border: 1px solid #5c6c41;
+  border-radius: 7px;
+  width: 32px;
+  height: 32px;
+  background: #293321;
+  color: var(--accent);
+}
+.pool-remove {
+  background: #39231c;
+  border-color: #89544766;
+  color: #e6ac95;
+}
+.pool-token-row button:active,
+.pool-chips button:active {
+  transform: scale(0.9);
+}
+.pool-edit-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  justify-content: space-between;
+  border: 1px solid #5e714344;
+  background: #2a3521;
+  color: #d4e1bd;
+  border-radius: 8px;
+  padding: 11px 12px;
+  margin: 14px 0;
+  font-size: 11px;
+}
+.pool-dialog {
+  width: min(580px, calc(100vw - 28px));
+}
+.preview-chain-note {
+  font-size: 11px;
+  color: #ecc875;
+  line-height: 1.6;
+  margin: 10px 0;
+}
+.chain-ready-count {
+  color: var(--muted);
+  font-size: 10px;
+  margin: -7px 0 12px;
+}
+
+.chain-pool-status {
+  margin: -6px 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.chain-pool-status summary {
+  cursor: pointer;
+  padding: 8px 0;
+}
+.chain-pool-status summary strong {
+  display: inline;
+  color: var(--text);
+  font-size: 12px;
+}
+.chain-pool-status summary > span,
+.chain-pool-status summary > small {
+  display: block;
+  margin: 6px 0 0;
+}
+.chain-pool-status summary > small {
+  color: #d6f15c;
+  font-size: 11px;
+}
+.chain-pool-status ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 12px;
+}
+.chain-pool-status li {
+  border-top: 1px solid #ffffff14;
+  padding: 10px 0;
+}
+.chain-pool-status li b,
+.chain-pool-status li span {
+  display: block;
+  line-height: 1.55;
+}
+.chain-pool-status li b {
+  color: var(--text);
+}
+.chain-pool-status p {
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.stage-chain-selection {
+  margin: 16px 0 0;
+  padding: 14px 16px 6px;
+  border: 1px solid #ffffff14;
+  border-radius: 12px;
+  background: #ffffff03;
+}
+.stage-chain-selection .chain-picker {
+  margin-bottom: 10px;
+}
+.stage-chain-selection .chain-picker legend {
+  font-size: 11px;
+}
+@media (max-width: 600px) {
+  .stage-chain-selection {
+    padding: 12px;
+    margin-top: 12px;
+  }
+}

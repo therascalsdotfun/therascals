@@ -1,0 +1,193 @@
+.status-journey {
+  margin: 14px 0;
+  color: var(--ink, #2d2939);
+  text-align: left;
+  width: 100%;
+  min-width: 0;
+}
+.status-journey .journey-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 15px 12px;
+  border: 1px solid #bcaacb;
+  border-radius: 12px;
+  background: #eee8fa;
+  color: #2d2939;
+}
+.status-journey[data-tone="success"] .journey-banner {
+  background: #dceedd;
+  border-color: #a1bea4;
+}
+.status-journey[data-tone="attention"] .journey-banner {
+  background: #fff0c3;
+  border-color: #d8bb70;
+}
+.status-journey[data-tone="failed"] .journey-banner {
+  background: #f9e0e6;
+  border-color: #dca3b2;
+}
+.status-journey .journey-banner strong {
+  font-size: 15px;
+  line-height: 1.4;
+}
+.status-journey .journey-badge {
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: #fffdf5b3;
+  color: #4d465a;
+  font-size: 10px;
+  font-weight: 750;
+}
+.status-journey .journey-nodes {
+  display: grid;
+  grid-template-columns: repeat(var(--journey-count), minmax(0, 1fr));
+  list-style: none;
+  padding: 20px 0 4px;
+  margin: 0;
+  gap: 0;
+}
+.status-journey .journey-nodes > li {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 4px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+}
+.status-journey .journey-nodes > li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 22px;
+  left: calc(50% + 30px);
+  width: calc(100% - 60px);
+  height: 5px;
+  color: #ccc4d3;
+  background: radial-gradient(circle, currentColor 2px, transparent 2.5px) 0
+    50% / 10px 5px repeat-x;
+}
+.status-journey .journey-nodes > li[data-state="complete"]::after {
+  color: #6f9374;
+  animation: journey-dots 0.85s linear infinite;
+}
+.status-journey .journey-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid #c9bdd5;
+  background: var(--paper, #fffdf5);
+  border-radius: 12px;
+  color: #655280;
+}
+.status-journey li[data-state="pending"] .journey-icon {
+  opacity: 0.6;
+}
+.status-journey li[data-state="active"] .journey-icon {
+  border-color: #4263e9;
+  box-shadow: 0 0 0 3px #4263e91a;
+  animation: journey-pulse 1.4s ease-in-out infinite;
+}
+.status-journey .journey-mark {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  right: -5px;
+  top: -7px;
+  border-radius: 50%;
+  background: #b5e3c8;
+  color: #245139;
+  border: 2px solid var(--paper, #fffdf5);
+  animation: journey-pop 0.25s ease-out;
+}
+.status-journey li[data-state="failed"] .journey-mark {
+  background: #efbbc9;
+  color: #762d43;
+}
+.status-journey li[data-state="unresolved"] .journey-mark {
+  background: #f6d887;
+  color: #654b14;
+}
+.status-journey .journey-node-label {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+.status-journey .journey-node-detail {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #716b79;
+  overflow-wrap: anywhere;
+}
+.status-journey .journey-detail {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #716b79;
+}
+.status-journey .journey-busy {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #b2a2ca;
+  border-top-color: #4263e9;
+  border-radius: 50%;
+  animation: journey-turn 1s linear infinite;
+}
+.journey-details {
+  margin: 8px 0 14px;
+  color: var(--ink);
+}
+.journey-details > summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+@keyframes journey-dots {
+  to {
+    background-position: 20px 50%;
+  }
+}
+@keyframes journey-pulse {
+  50% {
+    box-shadow: 0 0 0 5px #4263e90b;
+  }
+}
+@keyframes journey-pop {
+  from {
+    transform: scale(0.6);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes journey-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-journey *,
+  .status-journey *::after {
+    animation: none !important;
+  }
+}
+
+.status-journey .journey-banner strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
