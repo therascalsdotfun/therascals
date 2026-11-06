@@ -1,23 +1,34 @@
-<div align="center">
+<p align="center">
+  <picture>
+    <img alt="TheRascals Logo" src="public/brands/rascals/rascal-mascot.png" width="160">
+  </picture>
+</p>
 
-<img src="public/brands/rascals/rascal-mascot.png" alt="TheRascals Mascot" width="180"/>
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License: MIT"></a>
+  <a href="https://near.org"><img src="https://img.shields.io/badge/NEAR-Intents%20%26%20DAO-000000?style=flat-square&logo=near&logoColor=white" alt="NEAR Protocol"></a>
+  <a href="https://github.com/therascalsdotfun/therascals/actions"><img src="https://img.shields.io/badge/Build-Passing-2ea44f?style=flat-square" alt="Build Status"></a>
+  <a href="https://therascals.fun"><img src="https://img.shields.io/badge/Live-therascals.fun-6b4c9a?style=flat-square" alt="Live Domain"></a>
+  <a href="https://x.com/therascalsfun"><img src="https://img.shields.io/badge/X-@therascalsfun-000000?style=flat-square&logo=x&logoColor=white" alt="X: @therascalsfun"></a>
+  <a href="https://github.com/therascalsdotfun/therascals/stargazers"><img src="https://img.shields.io/github/stars/therascalsdotfun/therascals?style=flat-square&color=DAA520" alt="GitHub Stars"></a>
+</p>
 
-# TheRascals
+<p align="center"><b>Turn the crank. Filter your chaos. Prove your draw. Built on NEAR.</b></p>
 
-**A Degen Discovery Arcade & Contributor DAO on NEAR**
-<br/>
-<em>Turn the crank, filter your chaos, prove your draw, and govern on-chain.</em>
+<p align="center">
+  <a href="https://therascals.fun">Live Arcade</a> |
+  <a href="https://therascals.fun/#dao">Contributor DAO</a> |
+  <a href="https://perps.near.com/">40x Perps</a> |
+  <a href="docs/community-presets.md">Community Presets</a> |
+  <a href="docs/agents.md">MCP Agent Guide</a> |
+  <a href="https://x.com/therascalsfun">X (@therascalsfun)</a>
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
-[![NEAR Protocol](https://img.shields.io/badge/NEAR-Intents%20%26%20DAO-000000?style=flat-square&logo=near&logoColor=white)](https://near.org)
-[![Build Status](https://img.shields.io/badge/Build-Passing-2ea44f?style=flat-square)](https://github.com/therascalsdotfun/therascals/actions)
-[![Live Domain](https://img.shields.io/badge/Live-therascals.fun-6b4c9a?style=flat-square)](https://therascals.fun)
-[![X](https://img.shields.io/badge/X-@therascalsfun-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/therascalsfun)
-[![GitHub Stars](https://img.shields.io/github/stars/therascalsdotfun/therascals?style=flat-square&color=DAA520)](https://github.com/therascalsdotfun/therascals/stargazers)
-
-[Live Arcade](https://therascals.fun) | [Contributor DAO](https://therascals.fun/#dao) | [Agent MCP Guide](docs/agents.md) | [Community Presets](docs/community-presets.md)
-
-</div>
+<p align="center">
+  <video src="./docs/media/arcade-walkthrough.mp4" poster="./docs/media/poster.jpg" controls width="100%"></video>
+  <br>
+  <em>Walkthrough: Sign-in, universe screening, and physical 3D cage draw on <a href="https://therascals.fun">therascals.fun</a></em>
+</p>
 
 ---
 
@@ -41,15 +52,40 @@ The arcade merges high-energy meme culture with uncompromised cryptographic hone
 
 ---
 
-## 🌐 Live Application
+## 🎨 Brand Universe & Visual Identity
 
-- **Arcade Web Application**: [https://therascals.fun](https://therascals.fun) (Mainnet-default mode with explicit wallet approvals)
-- **Contributor DAO Governance**: [https://therascals.fun/#dao](https://therascals.fun/#dao) (Deployed NEAR testnet contract `v2.rascals-dao-1104.testnet`)
-- **Official Public Repository**: [therascalsdotfun/therascals](https://github.com/therascalsdotfun/therascals)
+The visual language of TheRascals pairs warm paper textures, hand-drawn mascot art, and physical arcade elements with high-precision 3D mechanics:
+
+<div align="center">
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="./docs/images/brand-arcade.jpg" alt="The Degen Arcade Workshop" width="100%"/>
+      <br><b>The Degen Arcade Workshop</b>
+    </td>
+    <td width="50%" align="center">
+      <img src="./docs/images/brand-dao-workshop.jpg" alt="NEAR Contributor DAO Governance" width="100%"/>
+      <br><b>NEAR Contributor DAO Governance</b>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="./docs/images/brand-trenches.jpg" alt="Degen Trenches Token Discovery" width="100%"/>
+      <br><b>Degen Trenches Token Discovery</b>
+    </td>
+    <td width="50%" align="center">
+      <img src="./docs/images/brand-mascot-poses.png" alt="Rascal Mascot Character Figures" width="100%"/>
+      <br><b>Rascal Mascot Character Figures</b>
+    </td>
+  </tr>
+</table>
+</div>
 
 ---
 
-## 📸 Screenshots
+## 📸 Product UI Experience
+
+Authentic, high-resolution component captures from the live web application at [therascals.fun](https://therascals.fun):
 
 <div align="center">
 <table>
@@ -59,11 +95,14 @@ The arcade merges high-energy meme culture with uncompromised cryptographic hone
 </tr>
 <tr>
 <td width="50%"><img src="./docs/images/full-degen.png" alt="Full Degen Mode" width="100%"/><br/><b>Full Degen</b> - Chain, Token & Amount 3-reel spin</td>
-<td width="50%"><img src="./docs/images/filter-presets.png" alt="Filter Settings & Presets" width="100%"/><br/><b>Filters & Presets</b> - Custom screening & Degen Codes</td>
+<td width="50%"><img src="./docs/images/filter-presets.png" alt="Filter Settings & Presets" width="100%"/><br/><b>Filters & Presets</b> - Custom screening, Degen Codes & usage metrics</td>
 </tr>
 <tr>
-<td width="50%"><img src="./docs/images/near-intents.png" alt="NEAR Intents Swaps" width="100%"/><br/><b>NEAR Intents</b> - Cross-chain 1Click quotes & routing</td>
-<td width="50%"><img src="./docs/images/contributor-dao.png" alt="Contributor DAO" width="100%"/><br/><b>Contributor DAO</b> - NEAR testnet governance & bounty claims</td>
+<td width="50%"><img src="./docs/images/near-intents.png" alt="NEAR Intents Swaps" width="100%"/><br/><b>NEAR Intents</b> - Cross-chain 1Click quotes & guaranteed receive</td>
+<td width="50%"><img src="./docs/images/perps-hub.png" alt="Confidential Perps Hub" width="100%"/><br/><b>Confidential Perps Hub</b> - 40x perpetuals via near.com & Hyperliquid</td>
+</tr>
+<tr>
+<td colspan="2" align="center"><img src="./docs/images/contributor-dao.png" alt="Contributor DAO" width="100%"/><br/><b>Contributor DAO</b> - NEAR testnet governance, review worker scoring & bounty claims</td>
 </tr>
 </table>
 </div>
@@ -119,7 +158,12 @@ Built for the **NEAR Hackathon**, bridging fast meme discovery with NEAR's infra
 - **Challenge Period & Treasury Protection**: Payouts remain locked during a challenge window to prevent malicious claims, before releasing funds to the contributor.
 - **Testnet Acceptance Proof**: Verified on-chain testnet acceptance paid 40 test tokens to contributor accounts with zero pending reservations.
 
-### 3. Hackathon Track Alignment & Disclosures
+### 3. Confidential 40x Perps Hub (`perps.near.com` x Hyperliquid)
+- Directly integrated into Rascals' navigation at `/#perps`.
+- Exposes 50+ perpetual markets with up to 40x leverage, cross-chain deposit routing via NEAR Intents, non-custodial passkey signing, and margin calculation.
+- Direct `⚡ 40x Perps` reveal handoffs in `AdvancedTrading` link revealed tokens to confidential trading on `https://perps.near.com/`.
+
+### 4. Hackathon Track Alignment & Disclosures
 - **Tracks**: *Unstoppable DeFi*, *Agent Economy*, *Memecoins With Mechanics*, *Social Money*, and *Open Innovation*.
 - **Honest Status Disclosures**:
   - Main arcade discovery, 3D lottery, and swap preflights run live with explicit wallet authorization.
@@ -233,8 +277,8 @@ therascals/
 ├── workers/
 │   └── contributor-verdict/    # Deterministic review worker scoring PR evidence
 ├── deploy/                     # Dockerfiles, Caddy configs, and host deployment automation
-├── docs/                       # Architecture decisions, contract ABIs, and specifications
-└── tests/                      # 288+ unit, integration, and UI regression test suites
+├── docs/                       # Architecture decisions, contract ABIs, media & documentation
+└── tests/                      # 289+ unit, integration, and UI regression test suites
 ```
 
 ---
