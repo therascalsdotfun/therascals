@@ -15,7 +15,7 @@ it("starts the shipped stdio entry point with a clean MCP handshake and no stdou
   });
   try {
     await client.connect(transport);
-    expect((await client.listTools()).tools).toHaveLength(8);
+    expect((await client.listTools()).tools).toHaveLength(10);
     expect(
       JSON.stringify(await client.readResource({ uri: "rascals://guide" })),
     ).toContain("read-only");
@@ -54,11 +54,25 @@ it("exposes real MCP read-only tools/resources, preserves a visitor and never ex
   await client.connect(b);
   try {
     const tools = await client.listTools();
-    expect(tools.tools).toHaveLength(8);
+    expect(tools.tools).toHaveLength(10);
     expect(tools.tools.every((t) => t.annotations?.readOnlyHint)).toBe(true);
     expect(tools.tools.map((t) => t.name).join(" ")).not.toMatch(
       /execute|sign|deposit|withdraw|buy/,
     );
+    expect(tools.tools.map((t) => t.name)).toContain("search_presets");
+    expect(tools.tools.map((t) => t.name)).toContain("get_preset");
+    const presetsSearch = await client.callTool({
+      name: "search_presets",
+      arguments: { q: "alpha", sort: "popular" },
+    });
+    expect(presetsSearch.isError).not.toBe(true);
+    expect(calls.at(-1)?.url).toContain("/api/presets?q=alpha&sort=popular");
+    const getPreset = await client.callTool({
+      name: "get_preset",
+      arguments: { id: "123e4567-e89b-12d3-a456-426614174000" },
+    });
+    expect(getPreset.isError).not.toBe(true);
+    expect(calls.at(-1)?.url).toContain("/api/presets/123e4567-e89b-12d3-a456-426614174000");
     const markets = await client.callTool({
       name: "list_tokens",
       arguments: { limit: 20 },

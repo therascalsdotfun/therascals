@@ -6,11 +6,13 @@ import { RewardsError, RewardsService } from "./service.ts";
 import { validMint } from "../market/gecko.ts";
 import { validRewardSignature } from "./receipt.ts";
 import { subjectFor } from "../beta/access.ts";
+import type { CommunityPresets } from "../presets/service.ts";
 export function registerRewards(
   app: FastifyInstance,
   rewards: RewardsService | undefined,
   identity: (req: any) => WalletIdentity | null,
   auth: WalletAuthService,
+  presets?: CommunityPresets,
 ) {
   const handle =
     (
@@ -114,7 +116,16 @@ export function registerRewards(
           400,
         );
       return body.data.lane === "mainnet"
-        ? service.claimMainnet(user, body.data.ticketId, body.data.signature)
+        ? service.claimMainnet(
+            user,
+            body.data.ticketId,
+            body.data.signature,
+            (ticket, sig) => {
+              if (ticket.presetId && presets) {
+                presets.tradeExecuted(user, ticket.presetId, sig);
+              }
+            },
+          )
         : service.claimPractice(user, body.data.operationId);
     }),
   );

@@ -7,6 +7,8 @@ import { simulateSolanaMessage } from "./preflight.ts";
 import { clientMessage } from "../client-message.ts";
 import type { Connection } from "@solana/web3.js";
 import { registerSellQuotes } from "../portfolio/sell-quote.ts";
+import type { CommunityPresets } from "../presets/service.ts";
+import type { WalletIdentity } from "../../../../packages/shared/src/wallet-auth.ts";
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/),
   chain = z.enum(["base", "bsc"]);
 export function registerMainnet(
@@ -16,6 +18,8 @@ export function registerMainnet(
     rate: (key: string, max: number) => void;
     evm?: EvmMainnet;
     solana?: Connection;
+    presets?: CommunityPresets;
+    identity?: (req: any) => WalletIdentity | null;
   },
 ) {
   registerSellQuotes(app, options.rate);
@@ -103,6 +107,8 @@ export function registerMainnet(
           .string()
           .regex(/^(?:[1-9]\d?|100)(?:\.\d{1,2})?$/)
           .refine((v) => Number(v) <= 100),
+        rollId: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+        presetId: z.string().uuid().optional(),
       })
       .strict()
       .safeParse(req.body);
@@ -118,7 +124,16 @@ export function registerMainnet(
           p.data.mint,
           market.snapshot().filters,
         );
-      return await evm.quote({ ...p.data, symbol: token.symbol });
+      const user = options.identity?.(req);
+      const attributedPreset =
+        p.data.presetId ??
+        (user && p.data.rollId ? options.presets?.presetForRoll(user, p.data.rollId) : null) ??
+        (user ? options.presets?.activeFor(user) : null);
+      return await evm.quote({
+        ...p.data,
+        symbol: token.symbol,
+        ...(attributedPreset ? { presetId: attributedPreset } : {}),
+      });
     } catch (e) {
       return failure(reply, e);
     }
@@ -148,7 +163,12 @@ export function registerMainnet(
   app.get("/api/mainnet/evm/receipt", async (req, reply) => {
     options.rate("evm-receipt:" + req.ip, 40);
     const p = z
-      .object({ chain, hash: z.string().regex(/^0x[0-9a-fA-F]{64}$/) })
+      .object({
+        chain,
+        hash: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+        quoteId: z.string().uuid().optional(),
+        presetId: z.string().uuid().optional(),
+      })
       .strict()
       .safeParse(req.query);
     if (!p.success)
@@ -156,7 +176,25 @@ export function registerMainnet(
         .code(400)
         .send({ error: "Invalid network or transaction hash" });
     try {
-      return await evm.receipt(p.data.chain, p.data.hash);
+      const receipt = await evm.receipt(p.data.chain, p.data.hash);
+      if (receipt?.status === "confirmed" && options.presets) {
+        const draft = p.data.quoteId ? evm.getDraft(p.data.quoteId) : undefined;
+        const preset = p.data.presetId ?? draft?.presetId;
+        const u =
+          options.identity?.(req) ??
+          (draft
+            ? {
+                kind: "metamask" as const,
+                address: draft.wallet,
+                expiresAt: new Date(Date.now() + 86400000).toISOString(),
+              }
+            : null);
+        if (u) {
+          const finalPreset = preset ?? options.presets.activeFor(u);
+          if (finalPreset) options.presets.tradeExecuted(u, finalPreset, p.data.hash);
+        }
+      }
+      return receipt;
     } catch (e) {
       return failure(reply, e);
     }

@@ -58,6 +58,7 @@ import type {
   MarketResponse,
   TokenObservation,
 } from "../../../packages/shared/src/market.ts";
+import { decodeFilterCode } from "../../../packages/shared/src/filter-code.ts";
 import { RevealCelebration } from "./lottery/RevealCelebration.tsx";
 import { Cage } from "./lottery/Cage.tsx";
 import { CaseOpening } from "./rolling/CaseOpening.tsx";
@@ -217,6 +218,8 @@ export default function App() {
     [ticket, setTicket] = useState("5"),
     [preset, setPreset] = useState("strict"),
     [draft, setDraft] = useState<FilterSpec | null>(null),
+    [activePresetId, setActivePresetId] = useState<string | null>(null),
+    [activePresetTitle, setActivePresetTitle] = useState<string | null>(null),
     [pendingRequest, setPendingRequest] = useState<DiscoveryRequest>(null),
     [sound, setSound] = useState(false),
     [ambientMotion, setAmbientMotion] = useState(true),
@@ -250,6 +253,23 @@ export default function App() {
       .catch(() => {});
     return () => abort.abort();
   }, [walletScope]);
+  useEffect(() => {
+    try {
+      const presetParam = new URLSearchParams(window.location.search).get("preset");
+      if (!presetParam) return;
+      fetch(`/api/presets/${presetParam}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((p) => {
+          if (!p || !p.code) return;
+          const decoded = decodeFilterCode(p.code);
+          setDraft(decoded);
+          setActivePresetId(p.id);
+          setActivePresetTitle(p.title);
+          setDialog(true);
+        })
+        .catch(() => {});
+    } catch {}
+  }, []);
   const [execution, setExecution] = useState<any>(null),
     [stageKind, setStageKind] = useState<"preview">("preview"),
     [acting, setActing] = useState(false);
@@ -525,6 +545,7 @@ export default function App() {
     nextPreset: string,
     filters?: FilterSpec,
     style: RollStyle = rollStyle,
+    presetId?: string | null,
   ) {
     if (!filterChangeAllowed(phase)) {
       setActionError(
@@ -543,10 +564,14 @@ export default function App() {
           ticket: nextTicket,
           preset: nextPreset === "custom" ? "broad" : nextPreset,
           ...(filters ? { filters: chainsForRoll(filters, style) } : {}),
+          ...(presetId ? { presetId } : {}),
         }),
       });
       if (scope !== scopeRef.current) return;
-      if (!r.ok) throw new Error("Check your amount and filter ranges");
+      if (!r.ok) {
+        const errData = await r.json().catch(() => null);
+        throw new Error(errData?.error || "Check your amount and filter ranges");
+      }
       await load();
       if (scope !== scopeRef.current) return;
       setTicket(nextTicket);
@@ -808,15 +833,13 @@ export default function App() {
               <Dices size={17} /> DEX
             </button>
 
-            {perpsAvailability === "mainnet" && (
-              <button
-                className={tab === "perps" ? "active" : ""}
-                aria-current={tab === "perps" ? "page" : undefined}
-                onClick={() => setTab("perps")}
-              >
-                <Flame size={17} /> Perp
-              </button>
-            )}
+            <button
+              className={tab === "perps" ? "active" : ""}
+              aria-current={tab === "perps" ? "page" : undefined}
+              onClick={() => setTab("perps")}
+            >
+              <Flame size={17} /> Perp
+            </button>
             <button
               className={tab === "markets" ? "active" : ""}
               onClick={() => setTab("markets")}
@@ -1458,19 +1481,7 @@ export default function App() {
               </aside>
             </div>
           ) : tab === "perps" ? (
-            perpsAvailability === "mainnet" ? (
-              <PerpsPage game={perps} />
-            ) : (
-              <section>
-                <h1>Perp slots</h1>
-                <p>
-                  {perpsAvailability === "loading"
-                    ? "Checking Hyperliquid availability…"
-                    : "Hyperliquid trading is unavailable on this server."}
-                </p>
-                <button onClick={() => setTab("draw")}>Back to DEX</button>
-              </section>
-            )
+            <PerpsPage game={perps} />
           ) : tab === "dao" ? (
             <section
               className="dao-integrated"
@@ -1706,7 +1717,7 @@ export default function App() {
                 id="game-filter-form"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void configure(ticket, presetFor(draft), draft);
+                  void configure(ticket, presetFor(draft), draft, rollStyle, activePresetId);
                 }}
               >
                 <ChainPicker
@@ -1720,7 +1731,17 @@ export default function App() {
                 />
                 <FilterSettings
                   value={draft}
+                  activePresetId={activePresetId}
+                  activePresetTitle={activePresetTitle}
+                  onPresetSelect={(id, title) => {
+                    setActivePresetId(id);
+                    setActivePresetTitle(title ?? null);
+                  }}
+                  userAddress={Object.values(accounts)[0]?.address}
+                  disabled={configBusy || inMotion || acting}
                   onChange={(next) => {
+                    setActivePresetId(null);
+                    setActivePresetTitle(null);
                     setDraft(next);
                   }}
                 >

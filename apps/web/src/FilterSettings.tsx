@@ -15,6 +15,7 @@ import {
 } from "./filter-milestones.ts";
 import "./filter-settings.css";
 import { FilterCodePanel } from "./FilterCodePanel.tsx";
+import { CommunityPresets } from "./CommunityPresets.tsx";
 
 const criteria = [
   {
@@ -165,10 +166,20 @@ export function FilterSettings({
   value,
   onChange,
   children,
+  activePresetId = null,
+  activePresetTitle = null,
+  onPresetSelect,
+  userAddress,
+  disabled,
 }: {
   value: FilterSpec;
   onChange: (next: FilterSpec) => void;
   children?: ReactNode;
+  activePresetId?: string | null;
+  activePresetTitle?: string | null;
+  onPresetSelect?: (presetId: string | null, title?: string) => void;
+  userAddress?: string | null;
+  disabled?: boolean;
 }) {
   const prefix = useId(),
     preset = presetFor(value);
@@ -194,7 +205,28 @@ export function FilterSettings({
           : "Custom";
   return (
     <div className="filter-settings">
-      <FilterCodePanel value={value} onChange={onChange} />
+      <CommunityPresets
+        currentFilters={value}
+        activePresetId={activePresetId}
+        onApplyPreset={(id, next, title) => {
+          onChange(next);
+          onPresetSelect?.(id, title);
+        }}
+        userAddress={userAddress}
+        disabled={disabled}
+      />
+      {activePresetId && activePresetTitle && (
+        <div className="presets-status-banner">
+          <span>&gt;&gt; Active Preset: <strong>{activePresetTitle}</strong> (attribution ready on Apply)</span>
+        </div>
+      )}
+      <FilterCodePanel
+        value={value}
+        onChange={(next) => {
+          onPresetSelect?.(null);
+          onChange(next);
+        }}
+      />
       <div className="settings-preset">
         <div>
           <span className="settings-eyebrow">YOUR PLAY STYLE</span>

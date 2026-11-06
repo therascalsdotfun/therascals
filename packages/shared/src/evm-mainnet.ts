@@ -156,6 +156,7 @@ export type EvmTradeQuote = {
   route: string[];
   fees: { name: string; usd: string; included: boolean }[];
   transaction: EvmUnsigned;
+  presetId?: string;
   /** Exact response retained for independent browser calldata validation. */
   routeQuote: any;
 };

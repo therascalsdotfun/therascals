@@ -35,6 +35,7 @@ export type IntentsSwapOperation = {
   fundingSignature?: string;
   nearCandidateHash?: string;
   fundingChainStatus?: string;
+  presetId?: string;
   swapDetails?: any;
   error?: string;
 };

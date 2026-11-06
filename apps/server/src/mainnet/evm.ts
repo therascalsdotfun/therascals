@@ -109,6 +109,7 @@ export class EvmMainnet {
     wallet: string;
     amount: string;
     symbol: string;
+    presetId?: string;
   }) {
     const chain = EVM_MAINNET[input.chain];
     let native = this.prices.get(input.chain);
@@ -170,6 +171,7 @@ export class EvmMainnet {
         included: f.included === true,
       })),
       transaction,
+      ...(input.presetId ? { presetId: input.presetId } : {}),
       routeQuote: {
         action: raw.action,
         estimate: {
@@ -186,6 +188,9 @@ export class EvmMainnet {
     while (this.drafts.size > 200)
       this.drafts.delete(this.drafts.keys().next().value!);
     return structuredClone(quote);
+  }
+  getDraft(id: string): EvmTradeQuote | undefined {
+    return this.drafts.get(id);
   }
   get(id: string, wallet: string) {
     const quote = this.drafts.get(id);

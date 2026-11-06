@@ -100,6 +100,7 @@ export class IntentsExecution {
       destinationAsset: string;
       amount: string;
       recipient: string;
+      presetId?: string;
     },
   ) {
     if (
@@ -275,6 +276,7 @@ export class IntentsExecution {
         owner,
         requestId: input.requestId,
         confidentiality,
+        ...(input.presetId ? { presetId: input.presetId } : {}),
         createdAt: new Date(this.now()).toISOString(),
         origin,
         destination,

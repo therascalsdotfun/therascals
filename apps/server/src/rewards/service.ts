@@ -35,6 +35,7 @@ export type TradeTicket = {
   createdAt: number;
   expiresAt: number;
   rewardId?: string;
+  presetId?: string;
 };
 export type VerifiedRewardBuy = {
   volumeAtomic: string;
@@ -186,6 +187,7 @@ export class RewardsService {
     identity: WalletIdentity,
     mint: string,
     maxAtomic: string,
+    presetId?: string | null,
   ): TradeTicket {
     if (identity.kind !== "phantom")
       throw new RewardsError(
@@ -193,7 +195,7 @@ export class RewardsService {
         400,
       );
     rewardForVolume(maxAtomic, 10000);
-    const ticket = {
+    const ticket: TradeTicket = {
       id: randomUUID(),
       owner: subjectFor(identity),
       ownerAddress: identity.address,
@@ -201,6 +203,7 @@ export class RewardsService {
       maxAtomic,
       createdAt: this.now(),
       expiresAt: this.now() + 600000,
+      ...(presetId ? { presetId } : {}),
     };
     this.store.putRecord("points:ticket:" + ticket.id, ticket);
     return ticket;
@@ -273,7 +276,12 @@ export class RewardsService {
       return entry;
     });
   }
-  async claimMainnet(identity: WalletIdentity, id: string, signature: string) {
+  async claimMainnet(
+    identity: WalletIdentity,
+    id: string,
+    signature: string,
+    onClaimed?: (ticket: TradeTicket, signature: string) => void,
+  ) {
     const owner = subjectFor(identity),
       ticket = this.store.getRecord<TradeTicket>("points:ticket:" + id);
     if (!ticket || ticket.owner !== owner)
@@ -317,6 +325,13 @@ export class RewardsService {
         ...ticket,
         rewardId: entry.id,
       });
+      if (onClaimed) {
+        try {
+          onClaimed(ticket, signature);
+        } catch {
+          // Preset trade attribution failures must not fail points crediting
+        }
+      }
       return entry;
     } finally {
       this.busy.delete(id);
