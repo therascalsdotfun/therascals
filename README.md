@@ -25,9 +25,9 @@
 </p>
 
 <p align="center">
-  <video src="./docs/media/arcade-walkthrough.mp4" poster="./docs/media/poster.jpg" controls width="100%"></video>
+  <video src="./docs/media/near-first-draw-v2.mp4" poster="./docs/media/poster.jpg" controls width="100%"></video>
   <br>
-  <em>Walkthrough: Sign-in, universe screening, and physical 3D cage draw on <a href="https://therascals.fun">therascals.fun</a></em>
+  <em>Your first draw: connect a NEAR wallet, set the pool, turn the crank, then review the route on <a href="https://therascals.fun">therascals.fun</a></em>
 </p>
 
 ---
