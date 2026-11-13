@@ -27,6 +27,14 @@ export function daoAssetUrl(
 ): string {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (
+    /^data:image\/(?:png|jpeg|jpg|webp|gif|avif);base64,[A-Za-z0-9+/=]+$/i.test(
+      path,
+    )
+  ) {
+    return path;
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(path)) return "";
   const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return `${normalizedBase}${path.replace(/^\/+/, "")}`;
 }

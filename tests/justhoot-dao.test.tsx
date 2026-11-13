@@ -323,5 +323,9 @@ describe("JustHoot DAO panel & bonding curve integration", () => {
     expect(daoAssetUrl("https://cdn.example/icon.png", "/dao/")).toBe(
       "https://cdn.example/icon.png",
     );
+    expect(
+      daoAssetUrl("data:image/webp;base64,UklGRkwHAABX", "/dao/"),
+    ).toBe("data:image/webp;base64,UklGRkwHAABX");
+    expect(daoAssetUrl("data:image/svg+xml;base64,PHN2Zz4=", "/dao/")).toBe("");
   });
 });
