@@ -2,7 +2,7 @@ import { sha256 } from "@noble/hashes/sha256";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 
 export type PerpsNetwork = "testnet" | "mainnet";
-export type PerpsUniverse = "perp" | "meme" | "custom";
+export type PerpsUniverse = "perp" | "meme" | "equity" | "custom";
 export type PerpsSide = "long" | "short";
 
 export const PERPS_MIN_NOTIONAL = 10;
@@ -44,6 +44,14 @@ export const PERPS_MEME_MARKETS = Object.freeze([
   "FARTCOIN",
   "TRUMP",
   "MEME",
+  "PEARL",
+]);
+
+export const PERPS_EQUITY_MARKETS = Object.freeze([
+  "xyz:JIO",
+  "xyz:RELIANCE",
+  "JIO",
+  "RELIANCE",
 ]);
 
 export const PERPS_LEVERAGE_TIERS = Object.freeze(
@@ -107,6 +115,7 @@ export type PerpsSpinResult = {
 };
 
 export function perpsDisplayName(name: string): string {
+  if (name.startsWith("xyz:")) return name.slice(4);
   return name === "kPEPE" ? "PEPE" : name;
 }
 
@@ -115,13 +124,17 @@ export function classifyPerpsMarkets(
 ): PerpsMarket[] {
   const byName = new Map(metaMarkets.map((market) => [market.name, market]));
   const output: PerpsMarket[] = [];
+  const seen = new Set<string>();
   const add = (names: readonly string[], universe: PerpsUniverse) => {
     for (const name of names) {
-      const meta = byName.get(name);
+      const meta = byName.get(name) ?? byName.get(`xyz:${name}`);
       if (!meta) continue;
+      const display = perpsDisplayName(meta.name);
+      if (seen.has(display)) continue;
+      seen.add(display);
       output.push({
-        name,
-        display: perpsDisplayName(name),
+        name: meta.name,
+        display,
         universe,
         maxLeverage: meta.maxLeverage,
         szDecimals: meta.szDecimals,
@@ -130,6 +143,7 @@ export function classifyPerpsMarkets(
   };
   add(PERPS_MAJOR_MARKETS, "perp");
   add(PERPS_MEME_MARKETS, "meme");
+  add(PERPS_EQUITY_MARKETS, "equity");
   return output;
 }
 
@@ -385,6 +399,14 @@ export type PerpsOperation = {
   realizedPnl?: number;
   fees?: number;
   error?: string;
+  txHash?: string;
+  explorerUrl?: string;
+  closeTxHash?: string;
+  closeExplorerUrl?: string;
+  nearPerpsUrl?: string;
+  hyperliquidPositionUrl?: string;
+  settlementAccount?: string;
+  settlementContract?: string;
   createdAt: number;
   updatedAt: number;
 };

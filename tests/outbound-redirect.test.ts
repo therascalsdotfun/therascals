@@ -61,6 +61,7 @@ it("inventories every outbound fetch without coupling the guard to line numbers"
     "apps/server/src/auth/proof.ts",
     "apps/server/src/execution/network.ts",
     "apps/server/src/execution/network.ts",
+    "apps/server/src/http/app.ts",
     "apps/server/src/intents/service.ts",
     "apps/server/src/intents/user-session.ts",
     "apps/server/src/intents/user-session.ts",

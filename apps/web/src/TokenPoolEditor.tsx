@@ -160,9 +160,17 @@ export function ChainPoolStatus({
                 </span>
               )}
               {chain === "near" ? (
-                <span>
-                  NEAR risk screening is not connected. Excluded from draws.
-                </span>
+                count > 0 || (source?.eligible ?? 0) > 0 ? (
+                  <span>
+                    JustHoot NEAR draw pool active (Ref Finance DCL / bonding
+                    curve).
+                  </span>
+                ) : (
+                  <span>
+                    General NEAR risk screening is not connected. Enable
+                    JustHoot Draw above to include NEAR launchpad tokens.
+                  </span>
+                )
               ) : blockers.length > 0 ? (
                 <span>
                   {blockers

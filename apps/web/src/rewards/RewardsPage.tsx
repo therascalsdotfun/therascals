@@ -11,6 +11,7 @@ import {
 import { useWallets } from "../wallets/Wallets.tsx";
 import { useRewards } from "./Rewards.tsx";
 import { RewardWheel } from "./RewardWheel.tsx";
+import { JustHootLeaderboardTable } from "../JustHootDraw.tsx";
 import {
   type RewardLane,
   POINTS_PER_DOLLAR,
@@ -286,6 +287,7 @@ export function RewardsPage({
               </article>
             </div>
           </div>
+          <JustHootLeaderboardTable />
           <section className="reward-ledger">
             <h2>Your points ledger</h2>
             <span>

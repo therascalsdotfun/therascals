@@ -9,13 +9,17 @@ import { VersionedTransaction } from "@solana/web3.js";
 import {
   ArrowDown,
   ArrowUpRight,
+  ChevronDown,
   RefreshCw,
   ShieldCheck,
   Wallet,
   Check,
   Download,
 } from "lucide-react";
-import type { IntentsCatalog } from "../../../packages/shared/src/intents.ts";
+import type {
+  IntentsAsset,
+  IntentsCatalog,
+} from "../../../packages/shared/src/intents.ts";
 import { formatAtomic } from "../../../packages/shared/src/intents.ts";
 import {
   intentsFundingPending,
@@ -33,6 +37,166 @@ const nativeSOL = "nep141:sol.omft.near",
   usdc = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const terminal = (o: IntentsSwapOperation) =>
   ["success", "refunded", "funding_failed"].includes(o.phase);
+const intentsChainInfo = (blockchain: IntentsAsset["blockchain"]) => {
+  if (blockchain === "sol") return { chain: "solana" as const, label: "Solana" };
+  if (blockchain === "base") return { chain: "base" as const, label: "Base" };
+  if (blockchain === "bsc") return { chain: "bsc" as const, label: "BNB" };
+  return { chain: "near" as const, label: "NEAR" };
+};
+const isDeprecatedAsset = (asset: IntentsAsset) =>
+  /\(DEPRECATED\)/i.test(asset.symbol);
+
+function IntentsAssetPicker({
+  label,
+  assets,
+  value,
+  originAssetId,
+  exactAssetId,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  assets: IntentsAsset[];
+  value: string;
+  originAssetId?: string;
+  exactAssetId?: string;
+  disabled?: boolean;
+  onChange: (assetId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [chainFilter, setChainFilter] = useState<string>("all");
+  const [showDeprecated, setShowDeprecated] = useState(false);
+  const hasDeprecated = assets.some(isDeprecatedAsset);
+  const visibleAssets = showDeprecated
+    ? assets
+    : assets.filter((a) => !isDeprecatedAsset(a) || a.assetId === value);
+  const selected = assets.find((a) => a.assetId === value) ?? visibleAssets[0] ?? assets[0];
+  const chains = Array.from(new Set(visibleAssets.map((a) => a.blockchain)));
+  const filtered = visibleAssets.filter(
+    (a) => chainFilter === "all" || a.blockchain === chainFilter,
+  );
+  return (
+    <div className="mainnet-field intents-asset-picker">
+      <div className="intents-field-head">
+        <span>{label}</span>
+        {selected && <IntentsAssetLabel asset={selected} size={16} />}
+      </div>
+      <button
+        type="button"
+        className="intents-picker-trigger"
+        disabled={disabled || !assets.length}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {selected ? (
+          <>
+            <IntentsAssetLabel asset={selected} iconOnly size={24} />
+            <span className="intents-picker-main">
+              <strong>
+                {selected.assetId === originAssetId
+                  ? "NEAR (native)"
+                  : tokenTicker(selected.symbol)}
+              </strong>
+              {selected.assetId === exactAssetId && (
+                <small className="intents-selected-tag">selected token</small>
+              )}
+            </span>
+            <span className="intents-chain-badge">
+              <ChainLogo
+                chain={intentsChainInfo(selected.blockchain).chain}
+                size={14}
+              />
+              {intentsChainInfo(selected.blockchain).label}
+            </span>
+          </>
+        ) : (
+          <span>Select token</span>
+        )}
+        <ChevronDown size={15} className="intents-picker-chevron" />
+      </button>
+      {open && (
+        <div className="intents-picker-dropdown" role="listbox" aria-label={label}>
+          {(chains.length > 1 || hasDeprecated) && (
+            <div className="intents-chain-filters">
+              {chains.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={chainFilter === "all" ? "is-active" : ""}
+                    onClick={() => setChainFilter("all")}
+                  >
+                    All ({visibleAssets.length})
+                  </button>
+                  {chains.map((b) => {
+                    const info = intentsChainInfo(b);
+                    return (
+                      <button
+                        key={b}
+                        type="button"
+                        className={chainFilter === b ? "is-active" : ""}
+                        onClick={() => setChainFilter(b)}
+                      >
+                        <ChainLogo chain={info.chain} size={12} />
+                        {info.label}
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+              {hasDeprecated && (
+                <button
+                  type="button"
+                  className={showDeprecated ? "is-active" : ""}
+                  onClick={() => setShowDeprecated((s) => !s)}
+                >
+                  {showDeprecated ? "Hide deprecated" : "Show deprecated"}
+                </button>
+              )}
+            </div>
+          )}
+          <div className="intents-picker-list">
+            {filtered.map((a) => {
+              const info = intentsChainInfo(a.blockchain);
+              const isSelected = a.assetId === value;
+              return (
+                <button
+                  key={a.assetId}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  className={`intents-picker-option ${isSelected ? "is-selected" : ""}`}
+                  onClick={() => {
+                    onChange(a.assetId);
+                    setOpen(false);
+                  }}
+                >
+                  <IntentsAssetLabel asset={a} iconOnly size={24} />
+                  <span className="intents-option-symbol">
+                    <strong>
+                      {a.assetId === originAssetId
+                        ? "NEAR (native)"
+                        : tokenTicker(a.symbol)}
+                    </strong>
+                    {a.assetId === exactAssetId && (
+                      <small className="intents-selected-tag">
+                        selected token
+                      </small>
+                    )}
+                  </span>
+                  <span className="intents-chain-badge">
+                    <ChainLogo chain={info.chain} size={13} />
+                    {info.label}
+                  </span>
+                  {isSelected && <Check size={14} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 export function IntentsSwap({
   token,
   rollId,
@@ -379,34 +543,24 @@ export function IntentsSwap({
       {catalogLoading && !catalog && <LoadingSkeleton kind="panel" />}
       {catalog && (!op || (!locked && expired) || terminal(op)) && (
         <>
-          <label className="mainnet-field">
-            Pay
-            {source && <IntentsAssetLabel asset={source} />}
-            <select
-              value={origin}
-              disabled={!catalog || working}
-              onChange={(e) => {
-                setOrigin(e.target.value);
-                changed();
-              }}
-            >
-              {catalog?.assets
-                .filter((a) =>
-                  identity?.kind === "near"
-                    ? a.assetId === catalog.originAsset
-                    : a.blockchain === "sol" &&
-                      (a.assetId === nativeSOL || a.contractAddress === usdc),
-                )
-                .map((a) => (
-                  <option key={a.assetId} value={a.assetId}>
-                    {a.assetId === catalog.originAsset
-                      ? "NEAR (native)"
-                      : a.symbol}{" "}
-                    · {a.blockchain.toUpperCase()}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <IntentsAssetPicker
+            label="Pay"
+            assets={
+              catalog?.assets.filter((a) =>
+                identity?.kind === "near"
+                  ? a.assetId === catalog.originAsset
+                  : a.blockchain === "sol" &&
+                    (a.assetId === nativeSOL || a.contractAddress === usdc),
+              ) ?? []
+            }
+            value={origin}
+            originAssetId={catalog?.originAsset}
+            disabled={!catalog || working}
+            onChange={(nextOrigin) => {
+              setOrigin(nextOrigin);
+              changed();
+            }}
+          />
           <label className="mainnet-field">
             Amount{" "}
             <span>
@@ -423,27 +577,18 @@ export function IntentsSwap({
             />
           </label>
           <ArrowDown size={16} />
-          <label className="mainnet-field">
-            Receive
-            {target && <IntentsAssetLabel asset={target} />}
-            <select
-              value={destination}
-              disabled={!catalog || working}
-              onChange={(e) => {
-                setDestination(e.target.value);
-                changed();
-              }}
-            >
-              {catalog?.assets
-                .filter((a) => a.assetId !== origin)
-                .map((a) => (
-                  <option key={a.assetId} value={a.assetId}>
-                    {tokenTicker(a.symbol)} · {a.blockchain.toUpperCase()}
-                    {a.assetId === exact?.assetId ? " · selected token" : ""}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <IntentsAssetPicker
+            label="Receive"
+            assets={catalog?.assets.filter((a) => a.assetId !== origin) ?? []}
+            value={destination}
+            originAssetId={catalog?.originAsset}
+            exactAssetId={exact?.assetId}
+            disabled={!catalog || working}
+            onChange={(nextDest) => {
+              setDestination(nextDest);
+              changed();
+            }}
+          />
           <label className="mainnet-field">
             Recipient on {target?.blockchain.toUpperCase()}
             <input

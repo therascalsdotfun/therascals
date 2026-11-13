@@ -24,6 +24,7 @@ import {
   Lock,
   RefreshCw,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Wallet,
   Zap,
@@ -138,11 +139,36 @@ function price(value: number | undefined): string {
 
 export type PerpsGame = ReturnType<typeof usePerpsGame>;
 
-export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
+export function usePerpsGame(
+  enabled = true,
+  expectedNetwork?: PerpsNetwork,
+  testnetEnabled = false,
+) {
   const { accounts, identity, connect, verify, evm } = useWallets();
+  const [networkMode, setNetworkModeState] = useState<PerpsNetwork>(
+    () =>
+      expectedNetwork ??
+      (enabled ? "mainnet" : testnetEnabled ? "testnet" : "mainnet"),
+  );
+  const userToggledNetwork = useRef(false);
+  useEffect(() => {
+    if (!testnetEnabled) {
+      if (networkMode !== "mainnet") setNetworkModeState("mainnet");
+      return;
+    }
+    if (
+      !userToggledNetwork.current &&
+      expectedNetwork &&
+      expectedNetwork !== networkMode
+    ) {
+      setNetworkModeState(expectedNetwork);
+    }
+  }, [expectedNetwork, testnetEnabled, networkMode]);
+  const isTestnetRoute = testnetEnabled && networkMode === "testnet";
+  const apiBase = isTestnetRoute ? "/api/perps/testnet" : "/api/perps";
   const walletKey = identity
-    ? `${identity.kind}:${identity.address.toLowerCase()}:${identity.chainId}`
-    : "guest";
+    ? `${networkMode}:${identity.kind}:${identity.address.toLowerCase()}:${identity.chainId ?? ""}`
+    : `${networkMode}:guest`;
   const walletKeyRef = useRef(walletKey);
   walletKeyRef.current = walletKey;
   const [catalog, setCatalog] = useState<PerpsCatalogView | null>(null);
@@ -176,17 +202,16 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
   }, []);
 
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled && !isTestnetRoute) {
       setCatalog(null);
       return;
     }
     let cancelled = false;
-    call<PerpsCatalogView>("/api/perps/catalog")
+    call<PerpsCatalogView>(`${apiBase}/catalog`)
       .then((view) => {
         if (!cancelled) {
-          if (expectedNetwork && view.network !== expectedNetwork)
-            throw Error("Hyperliquid network mismatch. Trading is disabled.");
           setCatalog(view);
+          setError("");
           const defaults = [
             "BTC",
             "ETH",
@@ -211,10 +236,14 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
     return () => {
       cancelled = true;
     };
-  }, [enabled, expectedNetwork]);
+  }, [enabled, isTestnetRoute, apiBase]);
 
   const refresh = useCallback(async () => {
-    if (!enabled || !identity || identity.kind !== "metamask") {
+    if (
+      (!enabled && !isTestnetRoute) ||
+      !identity ||
+      (!isTestnetRoute && identity.kind !== "metamask")
+    ) {
       setAgent(null);
       setOperations([]);
       return;
@@ -222,8 +251,8 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
     const scope = walletKeyRef.current;
     try {
       const [nextAgent, nextOperations] = await Promise.all([
-        call<PerpsAgentView>("/api/perps/agent"),
-        call<PerpsOperation[]>("/api/perps/positions"),
+        call<PerpsAgentView>(`${apiBase}/agent`),
+        call<PerpsOperation[]>(`${apiBase}/positions`),
       ]);
       if (scope !== walletKeyRef.current) return;
       setAgent(nextAgent);
@@ -243,7 +272,7 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
     } catch (e) {
       if (scope === walletKeyRef.current) setError(message(e));
     }
-  }, [identity, enabled]);
+  }, [identity, enabled, isTestnetRoute, apiBase]);
 
   useEffect(() => {
     clearSpinTimer();
@@ -281,18 +310,35 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
 
   useEffect(() => () => clearSpinTimer(), [clearSpinTimer]);
 
-  async function connectWallet() {
+  async function connectWallet(preferredKind: "near" | "metamask" | "phantom" = "metamask") {
     setBusy(true);
     setError("");
     try {
-      if (!accounts.metamask) await connect("metamask");
-      await verify("metamask");
+      const targetKind = isTestnetRoute
+        ? (Object.values(accounts)[0]?.kind ?? preferredKind)
+        : "metamask";
+      if (!accounts[targetKind]) await connect(targetKind);
+      await verify(targetKind);
       await refresh();
     } catch (e) {
       setError(walletMessage(e));
     } finally {
       setBusy(false);
     }
+  }
+
+  function setNetworkMode(next: PerpsNetwork) {
+    if (busy || phase === "spinning" || phase === "opening") return;
+    if (next === "testnet" && !testnetEnabled) return;
+    userToggledNetwork.current = true;
+    clearSpinTimer();
+    setNetworkModeState(next);
+    setSpin(null);
+    setResult(null);
+    setProof(null);
+    setOperation(null);
+    setPhase("idle");
+    setError("");
   }
 
   async function approveAgent() {
@@ -366,7 +412,7 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
     setBusy(true);
     try {
       const opened = await call<PerpsOperation>(
-        `/api/perps/spin/${spinId}/open`,
+        `${apiBase}/spin/${spinId}/open`,
         {},
       );
       setOperation(opened);
@@ -392,14 +438,18 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
       setError("Add at least 2 tokens to your pool before spinning.");
       return;
     }
-    if (!agent?.approved) {
+    if (!isTestnetRoute && !agent?.approved) {
       setError("Enable one-tap trading first.");
       return;
     }
-    if ((agent.withdrawable ?? 0) < 5) {
+    if (!isTestnetRoute && (agent?.withdrawable ?? 0) < 5) {
       setError(
         "Not enough available Hyperliquid USDC. Fund the account before spinning.",
       );
+      return;
+    }
+    if (isTestnetRoute && !identity) {
+      setError("Connect and verify your wallet first before spinning on Testnet.");
       return;
     }
     clearSpinTimer();
@@ -412,7 +462,7 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
     setPhase("idle");
     try {
       const clientSeed = randomSeed();
-      const started = await call<SpinStart>("/api/perps/spin", {
+      const started = await call<SpinStart>(`${apiBase}/spin`, {
         universe,
         marketNames: selectedMarkets.map((m) => m.name),
         amountCap,
@@ -440,7 +490,7 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
         clientSeed: string;
         commit: string;
         configHash: string;
-      }>(`/api/perps/spin/${started.spinId}/reveal`, { clientSeed });
+      }>(`${apiBase}/spin/${started.spinId}/reveal`, { clientSeed });
       setSpin(started);
       setResult(revealed.result);
       const snapshot = started.markets.map((market) => ({
@@ -517,7 +567,7 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
     setError("");
     try {
       const closed = await call<PerpsOperation>(
-        `/api/perps/positions/${operation.id}/close`,
+        `${apiBase}/positions/${operation.id}/close`,
         {},
       );
       setOperation(closed);
@@ -574,12 +624,12 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
     ) ??
     agent?.activeOperation ??
     null;
-  const manualApproved = !!agent?.approved;
+  const manualApproved = isTestnetRoute ? !!identity : !!agent?.approved;
   const canSpin =
-    enabled &&
+    (enabled || isTestnetRoute) &&
     selectedMarkets.length >= 2 &&
     manualApproved &&
-    (agent?.withdrawable ?? 0) >= 5 &&
+    (isTestnetRoute || (agent?.withdrawable ?? 0) >= 5) &&
     !busy &&
     (phase === "idle" || phase === "closed" || phase === "revealed");
   const lastOperation = operations[0] ?? null;
@@ -609,7 +659,11 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
   }
 
   return {
-    network: catalog?.network ?? expectedNetwork ?? "testnet",
+    network: networkMode,
+    mainnetEnabled: enabled,
+    testnetEnabled,
+    testnetRoute: isTestnetRoute,
+    setNetworkMode,
     catalog,
     agent,
     operations,
@@ -646,54 +700,293 @@ export function usePerpsGame(enabled = true, expectedNetwork?: PerpsNetwork) {
 }
 
 const FEATURED_PERP_MARKETS = [
-  { symbol: "BTC", name: "Bitcoin", maxLeverage: "40x", href: "https://perps.near.com/" },
-  { symbol: "ETH", name: "Ethereum", maxLeverage: "40x", href: "https://perps.near.com/" },
-  { symbol: "SOL", name: "Solana", maxLeverage: "20x", href: "https://perps.near.com/" },
-  { symbol: "NEAR", name: "NEAR Protocol", maxLeverage: "20x", href: "https://perps.near.com/" },
-  { symbol: "SUI", name: "Sui", maxLeverage: "20x", href: "https://perps.near.com/" },
-  { symbol: "DOGE", name: "Dogecoin", maxLeverage: "20x", href: "https://perps.near.com/" },
-  { symbol: "PEPE", name: "Pepe", maxLeverage: "10x", href: "https://perps.near.com/" },
-  { symbol: "AVAX", name: "Avalanche", maxLeverage: "20x", href: "https://perps.near.com/" },
+  {
+    symbol: "JIO",
+    name: "Jio Platforms (India’s biggest IPO)",
+    maxLeverage: "10x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid × trade.xyz",
+    category: "equity",
+    tag: "IPO PERP",
+  },
+  {
+    symbol: "RELIANCE",
+    name: "Reliance Industries",
+    maxLeverage: "10x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid × trade.xyz",
+    category: "equity",
+    tag: "EQUITY PERP",
+  },
+  {
+    symbol: "PEARL",
+    name: "Pearl",
+    maxLeverage: "10x",
+    href: "https://perps.near.com/",
+    venue: "NEAR × Hyperliquid",
+    category: "ecosystem",
+    tag: "NEAR NATIVE",
+  },
+  {
+    symbol: "BTC",
+    name: "Bitcoin",
+    maxLeverage: "40x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid L1",
+    category: "major",
+  },
+  {
+    symbol: "ETH",
+    name: "Ethereum",
+    maxLeverage: "40x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid L1",
+    category: "major",
+  },
+  {
+    symbol: "SOL",
+    name: "Solana",
+    maxLeverage: "20x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid L1",
+    category: "major",
+  },
+  {
+    symbol: "NEAR",
+    name: "NEAR Protocol",
+    maxLeverage: "20x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid L1",
+    category: "ecosystem",
+  },
+  {
+    symbol: "SUI",
+    name: "Sui",
+    maxLeverage: "20x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid L1",
+    category: "major",
+  },
+  {
+    symbol: "DOGE",
+    name: "Dogecoin",
+    maxLeverage: "20x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid L1",
+    category: "meme",
+  },
+  {
+    symbol: "PEPE",
+    name: "Pepe",
+    maxLeverage: "10x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid L1",
+    category: "meme",
+  },
+  {
+    symbol: "AVAX",
+    name: "Avalanche",
+    maxLeverage: "20x",
+    href: "https://perps.near.com/",
+    venue: "Hyperliquid L1",
+    category: "major",
+  },
 ];
+
+const MARKET_CATEGORIES = [
+  { id: "all", label: "All Markets" },
+  { id: "equity", label: "Pre-IPO & Equities" },
+  { id: "ecosystem", label: "NEAR Ecosystem" },
+  { id: "major", label: "Majors" },
+  { id: "meme", label: "Memes" },
+];
+
+function PerpsVerificationBox({ op }: { op: PerpsOperation }) {
+  const explorerUrl =
+    op.explorerUrl ??
+    (op.txHash ? `https://testnet.nearblocks.io/txns/${op.txHash}` : undefined);
+  const nearPerpsUrl = op.nearPerpsUrl ?? "https://perps.near.com/";
+  const hlPositionUrl =
+    op.hyperliquidPositionUrl ??
+    (op.network === "testnet"
+      ? `https://app.hyperliquid-testnet.xyz/trade/${op.display}`
+      : `https://app.hyperliquid.xyz/trade/${op.display}`);
+
+  return (
+    <div
+      className="perps-verification-box"
+      role="region"
+      aria-label="Rolled Perp Transaction & Position Verification"
+    >
+      <div className="perps-verification-head">
+        <strong>
+          <ShieldCheck size={14} /> Position &amp; Explorer Verification (
+          {op.display}-PERP {op.side.toUpperCase()} {op.leverage}x · $
+          {op.amount})
+        </strong>
+        <span>
+          {op.network === "testnet"
+            ? "NEAR Perps Testnet × HL Testnet"
+            : "Mainnet"}
+        </span>
+      </div>
+      {op.settlementContract && (
+        <p className="perps-verification-sub">
+          Settled on NEAR Testnet contract{" "}
+          <code>{op.settlementContract}</code> at mark price{" "}
+          <b>{price(op.entryPx)}</b>.
+        </p>
+      )}
+      <div className="perps-verification-links">
+        {explorerUrl && (
+          <a
+            href={explorerUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="perps-verify-link primary-verify"
+          >
+            View Open Tx on Explorer (
+            {op.txHash ? `${op.txHash.slice(0, 8)}…` : "NearBlocks"}){" "}
+            <ExternalLink size={12} />
+          </a>
+        )}
+        {op.closeExplorerUrl && (
+          <a
+            href={op.closeExplorerUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="perps-verify-link"
+          >
+            View Close Tx on Explorer (
+            {op.closeTxHash ? `${op.closeTxHash.slice(0, 8)}…` : "NearBlocks"}){" "}
+            <ExternalLink size={12} />
+          </a>
+        )}
+        <a
+          href={nearPerpsUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="perps-verify-link"
+        >
+          Check Position on NEAR Perps <ExternalLink size={12} />
+        </a>
+        <a
+          href={hlPositionUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="perps-verify-link"
+        >
+          Check {op.display}-PERP on Hyperliquid{" "}
+          {op.network === "testnet" ? "Testnet" : ""}{" "}
+          <ExternalLink size={12} />
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export function PerpsPage({ game }: { game: PerpsGame }) {
   const [view, setView] = useState<"portal" | "arcade">("portal");
+  const [category, setCategory] = useState("all");
+  const isTestnet = game.network === "testnet";
+
+  const displayedMarkets = useMemo(() => {
+    return category === "all"
+      ? FEATURED_PERP_MARKETS
+      : FEATURED_PERP_MARKETS.filter((m) => m.category === category);
+  }, [category]);
+
+  const latestOp = game.operation ?? game.lastOperation ?? null;
 
   return (
     <section className="perps-page">
-      <div className="perps-mode-toggle" role="tablist" aria-label="Perpetuals viewing mode">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === "portal"}
-          className={`perps-tab-btn ${view === "portal" ? "active" : ""}`}
-          onClick={() => setView("portal")}
+      <div className="perps-top-controls">
+        <div
+          className="perps-mode-toggle"
+          role="tablist"
+          aria-label="Perpetuals viewing mode"
         >
-          <Flame size={15} /> Confidential Hub (near.com)
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === "arcade"}
-          className={`perps-tab-btn ${view === "arcade" ? "active" : ""}`}
-          onClick={() => setView("arcade")}
-        >
-          <Dices size={15} /> Arcade Slot Mode
-        </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "portal"}
+            className={`perps-tab-btn ${view === "portal" ? "active" : ""}`}
+            onClick={() => setView("portal")}
+          >
+            <Flame size={15} /> Confidential Hub (near.com)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "arcade"}
+            className={`perps-tab-btn ${view === "arcade" ? "active" : ""}`}
+            onClick={() => setView("arcade")}
+          >
+            <Dices size={15} /> Arcade Slot Mode
+          </button>
+        </div>
+
+        {game.testnetEnabled && (
+          <div
+            className="perps-network-switch"
+            role="group"
+            aria-label="Perps network route"
+          >
+            <span className="perps-network-label">Route:</span>
+            <button
+              type="button"
+              aria-pressed={isTestnet}
+              className={`perps-net-btn ${isTestnet ? "active testnet" : ""}`}
+              onClick={() => {
+                game.setNetworkMode?.("testnet");
+                setView("arcade");
+              }}
+            >
+              Testnet · NEAR Perps × HL Testnet
+            </button>
+            <button
+              type="button"
+              aria-pressed={!isTestnet}
+              className={`perps-net-btn ${!isTestnet ? "active mainnet" : ""}`}
+              onClick={() => game.setNetworkMode?.("mainnet")}
+            >
+              Mainnet · near.com × HL L1
+            </button>
+          </div>
+        )}
       </div>
+
+      {latestOp && <PerpsVerificationBox op={latestOp} />}
 
       {view === "portal" ? (
         <div className="perps-portal-hub">
-          <header className="perps-hero perps-hub-hero">
+          <div className="perps-hero perps-hub-hero">
             <div>
-              <span className="perps-eyebrow">RASCALS × NEAR.COM × HYPERLIQUID</span>
+              <span className="perps-eyebrow">
+                RASCALS × NEAR.COM × HYPERLIQUID × TRADE.XYZ
+              </span>
               <h1>Trade Perps, Confidentially</h1>
               <p>
-                &gt;&gt; Up to 40x leverage across 50+ perpetual markets. Fund from any chain and any asset
-                through NEAR Intents. Nobody can trace your position back to you.
+                &gt;&gt; Up to 40x leverage across 50+ perpetual markets, 24/7
+                pre-IPO equities ($JIO, $RELIANCE), and ecosystem tokens
+                ($PEARL). Powered by Hyperliquid &amp; trade.xyz. Fund from any
+                chain and any asset through NEAR Intents. Nobody can trace your
+                position back to you.
               </p>
             </div>
             <div className="perps-hero-actions">
+              {game.testnetEnabled && (
+                <button
+                  type="button"
+                  className="secondary perps-testnet-cta"
+                  onClick={() => {
+                    game.setNetworkMode?.("testnet");
+                    setView("arcade");
+                  }}
+                >
+                  <Dices size={16} /> Roll on Perps Testnet (NEAR × HL)
+                </button>
+              )}
               <a
                 href="https://perps.near.com/"
                 target="_blank"
@@ -703,70 +996,139 @@ export function PerpsPage({ game }: { game: PerpsGame }) {
                 Launch near.com Perps <ArrowUpRight size={16} />
               </a>
             </div>
-          </header>
+          </div>
 
           <div className="perps-features-grid">
             <div className="perps-feature-card">
-              <div className="feature-icon-wrap"><Flame size={20} /></div>
+              <div className="feature-icon-wrap">
+                <Flame size={20} />
+              </div>
               <h4>Up to 40x Leverage</h4>
               <p>
-                Trade majors and trending memecoins with isolated margin, dynamic liquidation protection,
-                and custom take profit / stop loss levels.
+                Trade majors and trending memecoins with isolated margin,
+                dynamic liquidation protection, and custom take profit / stop
+                loss levels.
               </p>
             </div>
             <div className="perps-feature-card">
-              <div className="feature-icon-wrap"><Zap size={20} /></div>
+              <div className="feature-icon-wrap">
+                <Sparkles size={20} />
+              </div>
+              <h4>Pre-IPO &amp; Equities 24/7</h4>
+              <p>
+                Trade India’s biggest IPO ($JIO) and conglomerate equities
+                ($RELIANCE) 24/7, out of public view. Powered by trade.xyz HIP-3
+                order books on Hyperliquid.
+              </p>
+            </div>
+            <div className="perps-feature-card">
+              <div className="feature-icon-wrap">
+                <Zap size={20} />
+              </div>
               <h4>Cross-Chain via NEAR Intents</h4>
               <p>
-                Deposit from 30+ chains (SOL, ETH, BTC, NEAR, USDC). Assets are auto-swapped into HyperCore
-                USDC margin without manual bridging.
+                Deposit from 30+ chains (SOL, ETH, BTC, NEAR, USDC). Assets are
+                auto-swapped into HyperCore USDC margin without manual bridging.
               </p>
             </div>
             <div className="perps-feature-card">
-              <div className="feature-icon-wrap"><Lock size={20} /></div>
+              <div className="feature-icon-wrap">
+                <Lock size={20} />
+              </div>
               <h4>Confidential Trading</h4>
               <p>
-                Dedicated trading account on Hyperliquid. Deposits and withdrawals route through NEAR Intents
-                so positions cannot be traced back to you.
+                Dedicated trading account on Hyperliquid. Deposits and
+                withdrawals route through NEAR Intents so positions cannot be
+                traced back to you.
               </p>
             </div>
             <div className="perps-feature-card">
-              <div className="feature-icon-wrap"><Globe size={20} /></div>
+              <div className="feature-icon-wrap">
+                <Globe size={20} />
+              </div>
               <h4>Zero Seed Phrase</h4>
               <p>
-                Sign on your device with passkey support. No wallet extensions, KYC, or seed phrases to write down.
-                Ready in seconds.
+                Sign on your device with passkey support. No wallet extensions,
+                KYC, or seed phrases to write down. Ready in seconds.
               </p>
             </div>
           </div>
 
           <div className="perps-markets-section">
             <div className="section-title-wrap">
-              <h3>Featured 40x Perpetual Markets</h3>
-              <p className="disclosure">
-                Live perpetual contracts settling on Hyperliquid L1 order books.
-              </p>
+              <div className="markets-section-header">
+                <div>
+                  <h3>Featured Perpetual Markets</h3>
+                  <p className="disclosure">
+                    {isTestnet
+                      ? "Testnet route active: roll positions on NEAR Perps Testnet × Hyperliquid Testnet or inspect live markets on perps.near.com."
+                      : "Live perpetual contracts settling on Hyperliquid L1 & trade.xyz order books via perps.near.com."}
+                  </p>
+                </div>
+                <div
+                  className="market-category-filters"
+                  role="tablist"
+                  aria-label="Market categories"
+                >
+                  {MARKET_CATEGORIES.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={category === c.id}
+                      className={`cat-filter-btn ${category === c.id ? "active" : ""}`}
+                      onClick={() => setCategory(c.id)}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="perps-markets-grid">
-              {FEATURED_PERP_MARKETS.map((m) => (
+              {displayedMarkets.map((m) => (
                 <div key={m.symbol} className="perp-market-card">
                   <div className="market-header">
-                    <div>
-                      <span className="market-symbol">{m.symbol}-PERP</span>
-                      <span className="market-name">{m.name}</span>
+                    <div className="market-brand-wrap">
+                      <PerpsIcon symbol={m.symbol} size={28} />
+                      <div>
+                        <div className="market-symbol-row">
+                          <span className="market-symbol">{m.symbol}-PERP</span>
+                          {m.tag && (
+                            <span className="market-tag-pill">{m.tag}</span>
+                          )}
+                        </div>
+                        <span className="market-name">{m.name}</span>
+                      </div>
                     </div>
                     <span className="leverage-pill">{m.maxLeverage}</span>
                   </div>
                   <div className="market-footer">
-                    <span className="venue-tag">Hyperliquid L1</span>
-                    <a
-                      href={m.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="market-trade-link"
-                    >
-                      Trade on near.com <ArrowUpRight size={13} />
-                    </a>
+                    <span className="venue-tag">
+                      {isTestnet
+                        ? "NEAR Perps × HL Testnet"
+                        : (m.venue ?? "Hyperliquid L1")}
+                    </span>
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      {isTestnet && (
+                        <a
+                          href={`https://app.hyperliquid-testnet.xyz/trade/${m.symbol}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="market-trade-link"
+                        >
+                          HL Testnet <ArrowUpRight size={12} />
+                        </a>
+                      )}
+                      <a
+                        href={m.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="market-trade-link"
+                      >
+                        Trade on near.com <ArrowUpRight size={13} />
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -777,30 +1139,59 @@ export function PerpsPage({ game }: { game: PerpsGame }) {
             <div className="section-title-wrap">
               <h3>NEAR Intents Margin Calculator</h3>
               <p className="disclosure">
-                Calculate your cross-chain deposit into HyperCore USDC margin before entering a position.
+                Calculate your cross-chain deposit into HyperCore USDC margin
+                before entering a position.
               </p>
             </div>
             <PerpsFundingQuote />
           </div>
 
           <p className="perps-risk">
-            <ShieldAlert size={15} /> Leveraged perpetual contracts carry substantial risk of loss and liquidation.
-            Trades execute on Hyperliquid L1; cross-chain deposits route via NEAR Intents. The official portal is
-            accessible at <a href="https://perps.near.com/" target="_blank" rel="noreferrer">https://perps.near.com/</a>.
+            <ShieldAlert size={15} /> Leveraged perpetual contracts carry
+            substantial risk of loss and liquidation. Trades execute on
+            Hyperliquid L1; cross-chain deposits route via NEAR Intents. The
+            official portal is accessible at{" "}
+            <a
+              href="https://perps.near.com/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              https://perps.near.com/
+            </a>
+            .
           </p>
         </div>
       ) : (
         <div className="perps-arcade-hub">
-          <header className="perps-hero">
+          <div className="perps-hero">
             <div>
-              <span className="perps-eyebrow">RASCALS ORIGINALS</span>
+              <span className="perps-eyebrow">
+                {isTestnet
+                  ? "RASCALS × NEAR PERPS TESTNET × HYPERLIQUID TESTNET"
+                  : "RASCALS ORIGINALS"}
+              </span>
               <h1>Perp slot machine</h1>
-              <p>Four reels. A little chaos. One Hyperliquid position.</p>
+              <p>
+                {isTestnet
+                  ? "Four reels. On-chain NEAR Testnet receipt + live Hyperliquid Testnet mark price."
+                  : "Four reels. A little chaos. One Hyperliquid position."}
+              </p>
             </div>
             <span className="perps-badge">
-              HYPERLIQUID · {game.network === "mainnet" ? "MAINNET" : "TESTNET"}
+              {isTestnet
+                ? "NEAR PERPS × HL TESTNET"
+                : "HYPERLIQUID · MAINNET"}
             </span>
-          </header>
+          </div>
+          {!isTestnet && game.mainnetEnabled === false && (
+            <div className="perps-note" role="status" style={{ marginBottom: 14 }}>
+              Mainnet Perps execution is disabled on this server (no
+              Hyperliquid Mainnet credentials configured).{" "}
+              {game.testnetEnabled
+                ? "Switch Route to Testnet above to run the NEAR × Hyperliquid Testnet arcade."
+                : "Use the Confidential Hub tab for near.com markets."}
+            </div>
+          )}
           <div className="perps-layout">
             <PerpsSlot game={game} />
             <PerpsPanel game={game} />
@@ -809,7 +1200,8 @@ export function PerpsPage({ game }: { game: PerpsGame }) {
           <p className="perps-risk">
             <ShieldAlert size={14} /> Random leverage can erase the stake.
             Hyperliquid enforces a $10 minimum order, isolated margin and
-            liquidation. The agent wallet can trade and close but cannot withdraw.
+            liquidation. The agent wallet can trade and close but cannot
+            withdraw.
           </p>
         </div>
       )}
@@ -1077,7 +1469,9 @@ export function PerpsSlot({ game }: { game: PerpsGame }) {
 export function PerpsPanel({ game }: { game: PerpsGame }) {
   const { accounts, identity, error: walletIssue } = useWallets();
   const [revokeArmed, setRevokeArmed] = useState(false);
-  const account = accounts.metamask;
+  const isNearTestnet = (game as any).testnetRoute === true;
+  const connectedAny = Object.values(accounts)[0];
+  const account = isNearTestnet ? connectedAny : accounts.metamask;
   const agent = game.agent;
   const operation = game.operation;
   const busy = game.busy;
@@ -1085,7 +1479,7 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
   const remaining = operation?.closeAt
     ? Math.max(0, Math.ceil((operation.closeAt - Date.now()) / 1000))
     : null;
-  const approved = !!agent?.approved;
+  const approved = isNearTestnet ? !!identity : !!agent?.approved;
   const revokedAgents = [
     ...(agent?.revokedAgents ?? []),
     ...(agent?.revokedAgent ? [agent.revokedAgent] : []),
@@ -1096,7 +1490,7 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
       ...revokedAgents.map((revoked) => revoked.agentAddress),
     ]),
   ];
-  const balance = agent?.withdrawable ?? 0;
+  const balance = agent?.withdrawable ?? (isNearTestnet ? 1000 : 0);
   const active =
     operation && ["opening", "open", "closing"].includes(operation.phase);
 
@@ -1104,7 +1498,9 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
     <aside className="perps-panel" aria-label="Perps controls">
       <div className="perps-panel-heading">
         <div>
-          <span className="perps-eyebrow">HYPERLIQUID</span>
+          <span className="perps-eyebrow">
+            {isNearTestnet ? "NEAR PERPS × HYPERLIQUID" : "HYPERLIQUID"}
+          </span>
           <h2>Perp slot</h2>
         </div>
         <span className="perps-badge small">
@@ -1116,34 +1512,64 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
 
       {!account ? (
         <div className="perps-wallet">
-          <p>
-            MetaMask is the Hyperliquid signer. Phantom and NEAR wallets cannot
-            sign these orders.
-          </p>
-          <button
-            className="primary"
-            disabled={busy}
-            onClick={() => void game.connectWallet()}
-          >
-            <Wallet size={15} />
-            {busy ? "Connecting…" : "Connect MetaMask"}
-          </button>
+          {isNearTestnet ? (
+            <>
+              <p>
+                Connect your NEAR (Meteor), MetaMask, or Phantom wallet and
+                verify ownership first to roll on NEAR Perps Testnet ×
+                Hyperliquid Testnet.
+              </p>
+              <button
+                className="primary"
+                disabled={busy}
+                onClick={() => void game.connectWallet("near")}
+              >
+                <Wallet size={15} />
+                {busy ? "Connecting…" : "Connect & Verify NEAR Wallet"}
+              </button>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() => void game.connectWallet("metamask")}
+              >
+                <Wallet size={15} /> Connect MetaMask
+              </button>
+            </>
+          ) : (
+            <>
+              <p>
+                MetaMask is the Hyperliquid signer. Phantom and NEAR wallets
+                cannot sign these orders.
+              </p>
+              <button
+                className="primary"
+                disabled={busy}
+                onClick={() => void game.connectWallet()}
+              >
+                <Wallet size={15} />
+                {busy ? "Connecting…" : "Connect MetaMask"}
+              </button>
+            </>
+          )}
         </div>
-      ) : !identity || identity.kind !== "metamask" ? (
+      ) : !identity || (!isNearTestnet && identity.kind !== "metamask") ? (
         <div className="perps-wallet">
           <p>
-            Verify {account.address.slice(0, 6)}…{account.address.slice(-4)} to
-            load its Hyperliquid account.
+            {isNearTestnet
+              ? `Mandatory step: Verify ${account.address} with a free sign-in message before rolling on Perps Testnet.`
+              : `Verify ${account.address.slice(0, 6)}…${account.address.slice(-4)} to load its Hyperliquid account.`}
           </p>
           <button
             className="primary"
             disabled={busy}
-            onClick={() => void game.connectWallet()}
+            onClick={() => void game.connectWallet(account.kind)}
           >
+            <ShieldCheck size={15} />
             {busy ? "Verifying…" : "Verify wallet"}
           </button>
         </div>
-      ) : !approved &&
+      ) : !isNearTestnet &&
+        !approved &&
         identity.chainId?.toLowerCase() !==
           "0x" + PERPS_SIGNATURE_CHAIN[game.network].toString(16) ? (
         <div className="perps-wallet">
@@ -1173,7 +1599,9 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
                   ? usd(balance)
                   : game.error
                     ? "Account unavailable"
-                    : "Loading…"}
+                    : !isNearTestnet && game.mainnetEnabled === false
+                      ? "Mainnet disabled"
+                      : "Loading…"}
               </strong>
             </div>
           </div>
@@ -1190,7 +1618,9 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
             {busy
               ? "Waiting for MetaMask…"
               : !agent
-                ? "Loading account…"
+                ? !isNearTestnet && game.mainnetEnabled === false
+                  ? "Mainnet Perps disabled on server"
+                  : "Loading account…"
                 : balance < 5
                   ? "Fund Hyperliquid to enable trading"
                   : "Enable one-tap trading"}
@@ -1224,7 +1654,7 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
             </div>
             <div>
               <small>Account value</small>
-              <strong>{usd(agent.accountValue)}</strong>
+              <strong>{usd(agent?.accountValue ?? balance)}</strong>
             </div>
             <button
               className="quiet"
@@ -1460,6 +1890,7 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
                   Waiting for Hyperliquid to confirm the position.
                 </p>
               )}
+              <PerpsVerificationBox op={operation} />
             </div>
           )}
 
@@ -1527,21 +1958,24 @@ export function PerpsPanel({ game }: { game: PerpsGame }) {
           )}
 
           {!operation && game.lastOperation && (
-            <p className="perps-note">
-              Last round:{" "}
-              <PerpsTicker symbol={game.lastOperation.display} size={18} />{" "}
-              {game.lastOperation.side.toUpperCase()}{" "}
-              {game.lastOperation.leverage}x ·{" "}
-              <span
-                className={
-                  (game.lastOperation.realizedPnl ?? 0) >= 0 ? "long" : "short"
-                }
-              >
-                {usd(game.lastOperation.realizedPnl)}
-              </span>
-            </p>
+            <>
+              <p className="perps-note">
+                Last round:{" "}
+                <PerpsTicker symbol={game.lastOperation.display} size={18} />{" "}
+                {game.lastOperation.side.toUpperCase()}{" "}
+                {game.lastOperation.leverage}x ·{" "}
+                <span
+                  className={
+                    (game.lastOperation.realizedPnl ?? 0) >= 0 ? "long" : "short"
+                  }
+                >
+                  {usd(game.lastOperation.realizedPnl)}
+                </span>
+              </p>
+              <PerpsVerificationBox op={game.lastOperation} />
+            </>
           )}
-          {!active && (
+          {!active && !isNearTestnet && (
             <div className="perps-agent-controls">
               {revokeArmed ? (
                 <>

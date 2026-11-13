@@ -40,6 +40,8 @@ const child = spawn(
       JACKPOT_MODE: "public",
       JACKPOT_PUBLIC_ORIGIN: "https://rascals.example",
       JACKPOT_PERPS_SECRET: randomBytes(32).toString("hex"),
+      JACKPOT_PERPS_NETWORK: "mainnet",
+      JACKPOT_PERPS_MAINNET: "1",
       HOST: "127.0.0.1",
       PORT: String(port),
     },
@@ -76,7 +78,7 @@ try {
   assert.equal(runtime.mode, "public");
   assert.equal(runtime.sponsored, false);
   assert.equal(runtime.mainnet.intentsExecutable, true);
-  assert.equal(runtime.perps.network, "testnet");
+  assert.equal(runtime.perps.network, "mainnet");
   report.runtime = runtime;
   const page = await get("/");
   const html = await page.text();

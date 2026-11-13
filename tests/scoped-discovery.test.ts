@@ -70,6 +70,7 @@ it("warms only the eligible identity universe without letting manual picks promo
   const cfg = {
     filters: {
       ...BROAD_FILTERS,
+      maxAgeMinutes: 1440,
       minVolume5m: 0,
       minBuys5m: 0,
       minSells5m: 0,

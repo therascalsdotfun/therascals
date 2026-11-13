@@ -80,6 +80,13 @@ type WalletContext = {
     receiverId: string;
     amount: string;
   }) => Promise<string>;
+  sendNearRefDclSwap: (request: {
+    signerId: string;
+    tokenContractId: string;
+    poolIds: string[];
+    nearAmountYocto: string;
+    minOutputAmount?: string;
+  }) => Promise<string>;
 };
 const Context = createContext<WalletContext | null>(null),
   key = "jackpot-connected-wallets-v1",
@@ -532,6 +539,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     operation.current = op;
     setPending(op);
     setIssue(null);
+    let connectedForVerify = false;
     try {
       const result = await gate.current.run(async (signal) => {
         const oldKind = exclusive.current.current;
@@ -605,6 +613,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           remember(kind, true);
           restoring.current.delete(kind);
           account(kind, current.address, current.chainId);
+          connectedForVerify = true;
         }
       }
     } catch (e) {
@@ -619,7 +628,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (active.current && stamp === requestEpoch.current) {
         operation.current = null;
         setPending(null);
-        void refreshIdentity();
+        if (connectedForVerify) {
+          void verify(kind);
+        } else {
+          void refreshIdentity();
+        }
       }
     }
   }
@@ -757,6 +770,152 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       );
     return hash;
   }
+  async function sendNearRefDclSwap(request: {
+    signerId: string;
+    tokenContractId: string;
+    poolIds: string[];
+    nearAmountYocto: string;
+    minOutputAmount?: string;
+  }) {
+    if (
+      accountRef.current.near?.address !== request.signerId ||
+      identityRef.current?.kind !== "near" ||
+      identityRef.current.address !== request.signerId
+    )
+      throw new Error("Connect and verify your NEAR wallet first.");
+    if (
+      !/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(request.tokenContractId) ||
+      request.tokenContractId.length > 64 ||
+      !/^[1-9]\d{0,29}$/.test(request.nearAmountYocto) ||
+      !Array.isArray(request.poolIds) ||
+      request.poolIds.length === 0
+    )
+      throw new Error("Invalid NEAR Ref DCL swap parameters.");
+    const c = await ensureNear(),
+      connected = await c.getConnectedWallet();
+    if (connected.accounts[0]?.accountId !== request.signerId)
+      throw new Error("NEAR account changed before approval.");
+    let hasTokenStorage = false;
+    try {
+      const rpcRes = await fetch("https://free.rpc.fastnear.com", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "storage-check",
+          method: "query",
+          params: {
+            request_type: "call_function",
+            finality: "final",
+            account_id: request.tokenContractId,
+            method_name: "storage_balance_of",
+            args_base64: btoa(
+              JSON.stringify({ account_id: request.signerId }),
+            ),
+          },
+        }),
+      });
+      if (rpcRes.ok) {
+        const rpcJson = await rpcRes.json();
+        const bytes: number[] | undefined = rpcJson?.result?.result;
+        if (Array.isArray(bytes) && bytes.length > 0) {
+          const decoded = JSON.parse(
+            new TextDecoder().decode(new Uint8Array(bytes)),
+          );
+          if (decoded && decoded.total) hasTokenStorage = true;
+        }
+      }
+    } catch {}
+    const swapMsg = JSON.stringify({
+      Swap: {
+        pool_ids: request.poolIds,
+        output_token: request.tokenContractId,
+        min_output_amount: request.minOutputAmount ?? "1",
+      },
+    });
+    const storageDepositTx = {
+      signerId: request.signerId,
+      receiverId: request.tokenContractId,
+      actions: [
+        {
+          type: "FunctionCall" as const,
+          params: {
+            methodName: "storage_deposit",
+            args: {
+              account_id: request.signerId,
+              registration_only: true,
+            },
+            gas: "30000000000000",
+            deposit: "1250000000000000000000",
+          },
+        },
+      ],
+    };
+    const wrapAndSwapTx = {
+      signerId: request.signerId,
+      receiverId: "wrap.near",
+      actions: [
+        {
+          type: "FunctionCall" as const,
+          params: {
+            methodName: "near_deposit",
+            args: {},
+            gas: "30000000000000",
+            deposit: request.nearAmountYocto,
+          },
+        },
+        {
+          type: "FunctionCall" as const,
+          params: {
+            methodName: "ft_transfer_call",
+            args: {
+              receiver_id: "dclv2.ref-labs.near",
+              amount: request.nearAmountYocto,
+              msg: swapMsg,
+            },
+            gas: "180000000000000",
+            deposit: "1",
+          },
+        },
+      ],
+    };
+    let result: any;
+    if (
+      !hasTokenStorage &&
+      typeof connected.wallet.signAndSendTransactions === "function"
+    ) {
+      const outcomes: any = await connected.wallet.signAndSendTransactions({
+        network: "mainnet",
+        transactions: [storageDepositTx, wrapAndSwapTx],
+      });
+      result = Array.isArray(outcomes)
+        ? outcomes[outcomes.length - 1]
+        : outcomes;
+    } else {
+      if (!hasTokenStorage) {
+        await connected.wallet.signAndSendTransaction({
+          network: "mainnet",
+          ...storageDepositTx,
+        });
+      }
+      result = await connected.wallet.signAndSendTransaction({
+        network: "mainnet",
+        ...wrapAndSwapTx,
+      });
+    }
+    const hash =
+      result?.transaction?.hash ??
+      result?.transaction_outcome?.id ??
+      (Array.isArray(result)
+        ? result[result.length - 1]?.transaction?.hash ??
+          result[result.length - 1]?.transaction_outcome?.id
+        : undefined);
+    if (typeof hash !== "string" || !hash)
+      throw new Error(
+        "The wallet returned no transaction hash. Check your NEAR wallet before sending again.",
+      );
+    return hash;
+  }
   async function signIntentsSession(
     challenge: import("./intents-auth.ts").IntentsSessionChallenge,
   ) {
@@ -790,6 +949,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         evm,
         clearError: () => setIssue(null),
         sendNearTransfer,
+        sendNearRefDclSwap,
         signIntentsSession,
       }}
     >
@@ -821,7 +981,10 @@ export function WalletConnections({
   } = useWallets();
   return (
     <div className="wallet-connections">
-      <p>One wallet at a time. Verify ownership with a free sign-in message.</p>
+      <p>
+        One wallet at a time. Verification is mandatory on connect — sign the
+        free message in your wallet to unlock rolling and trading.
+      </p>
       {(["near", "metamask", "phantom"] as const).map((kind) => {
         const wallet = accounts[kind],
           verified = sameWallet(identity, wallet),

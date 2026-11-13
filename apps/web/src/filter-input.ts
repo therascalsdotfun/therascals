@@ -8,6 +8,7 @@ export function filterInput(
 ): number | null {
   if (value === "")
     return [
+      "maxAgeMinutes",
       "minMarketCap",
       "maxMarketCap",
       "minLiquidity",

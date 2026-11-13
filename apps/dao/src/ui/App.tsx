@@ -1,3 +1,5 @@
+import { JustHootPanel } from "./JustHootPanel";
+import { SputnikDaoPanel, SputnikSummaryBanner } from "./SputnikDaoPanel";
 import { RascalMark } from "../../../web/src/RascalWorld";
 import {
   useCallback,
@@ -29,6 +31,7 @@ import {
   ShieldCheck,
   Vote,
   WalletCards,
+  Sparkles,
   X,
 } from "lucide-react";
 import {
@@ -78,7 +81,14 @@ const ms = (value: number) => Math.round(value * 1_000_000);
 const errText = (e: unknown) =>
   e instanceof Error ? e.message : "Something went wrong. Try again.";
 
-type Panel = "programs" | "overview" | "proposals" | "reviews" | "treasury";
+type Panel =
+  | "programs"
+  | "sputnik"
+  | "justhoot"
+  | "overview"
+  | "proposals"
+  | "reviews"
+  | "treasury";
 
 export default function App() {
   const [client, setClient] = useState<DaoClient | null>(null);
@@ -94,7 +104,11 @@ export default function App() {
     "policy" | "agent"
   >("policy");
   const readClient = useMemo(
-    () => new NearDaoClient(deployment.contract_id),
+    () =>
+      new NearDaoClient(
+        deployment.contract_id,
+        deployment.sputnik_dao_id ?? "therascals.sputnikv2.testnet",
+      ),
     [],
   );
 
@@ -148,7 +162,10 @@ export default function App() {
     setPending("connect-near");
     setError("");
     try {
-      const near = new NearDaoClient(deployment.contract_id);
+      const near = new NearDaoClient(
+        deployment.contract_id,
+        deployment.sputnik_dao_id ?? "therascals.sputnikv2.testnet",
+      );
       await near.connect();
       await refresh(near);
     } catch (e) {
@@ -219,7 +236,7 @@ export default function App() {
         <section className="hero">
           <div className="hero-copy">
             <div className="eyebrow">
-              <span className="squiggle">✳</span> OPEN SOURCE, SHARED VALUE
+              <span className="squiggle">✳</span> SPUTNIK DAO v2 × CONTRIBUTOR DAO · WORKING ON TESTNET
             </div>
             <h1>
               Build Rascals.
@@ -227,12 +244,21 @@ export default function App() {
               <em>Share the upside.</em>
             </h1>
             <p>
-              Propose changes to Rascals, review merged pull requests, and vote
-              on contributor rewards. One crew, one funded treasury.
+              Powered by <b>Sputnik DAO v2</b> (<code>therascals.sputnikv2.testnet</code>)
+              for council multisig and shared treasury grants, governing our
+              programmable Contributor DAO (<code>v2.rascals-dao-1104.testnet</code>)
+              for deterministic PR scoring and rewards.
             </p>
             <div className="hero-actions">
               <button
                 className="primary-button"
+                onClick={() => setPanel("sputnik")}
+              >
+                <Landmark size={17} /> Sputnik DAO Multisig{" "}
+                <ArrowUpRight size={17} />
+              </button>
+              <button
+                className="outline-button"
                 onClick={() => {
                   setPanel("proposals");
                   setProposalInitialKind("policy");
@@ -250,8 +276,8 @@ export default function App() {
               </button>
             </div>
             <div className="hero-note">
-              <LockKeyhole size={14} /> Wallet approval for every on-chain
-              action
+              <LockKeyhole size={14} /> Working on NEAR Testnet · Wallet approval
+              for every Sputnik &amp; Contributor DAO action
             </div>
           </div>
           <div className="hero-art" aria-hidden="true">
@@ -286,14 +312,22 @@ export default function App() {
           <div>
             <span className="network-pill online">
               <i />
-              NEAR TESTNET
+              WORKING ON NEAR TESTNET · SPUTNIK DAO v2
             </span>
             <p>
               {connected
-                ? `Connected as ${state?.actor}`
-                : "Live contract state · connect a testnet wallet to propose, vote or claim."}
+                ? `Connected as ${state?.actor} · Sputnik DAO v2 multisig & Contributor DAO live on NEAR Testnet`
+                : "Sputnik DAO v2 (therascals.sputnikv2.testnet) & Contributor DAO live on NEAR Testnet · connect a testnet wallet to propose, vote or claim."}
             </p>
           </div>
+          <a
+            href={`https://testnet.nearblocks.io/address/${deployment.sputnik_dao_id ?? "therascals.sputnikv2.testnet"}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {deployment.sputnik_dao_id ?? "therascals.sputnikv2.testnet"}{" "}
+            <ArrowUpRight size={14} />
+          </a>
           <a
             href={`https://testnet.nearblocks.io/address/${deployment.contract_id}`}
             target="_blank"
@@ -373,19 +407,37 @@ export default function App() {
                 </b>
               </div>
               <div className="status-detail contract-detail">
-                <span className="label">Contract</span>
+                <span className="label">Sputnik DAO v2 (Testnet)</span>
+                <b>
+                  {state.sputnik?.contract_id ??
+                    state.sputnik_dao_id ??
+                    "therascals.sputnikv2.testnet"}
+                </b>
+              </div>
+              <div className="status-detail contract-detail">
+                <span className="label">Contributor Contract</span>
                 <b>{state.contract_id}</b>
               </div>
             </section>
 
             <section className="metrics-grid">
               <Metric
+                icon={<Landmark />}
+                title="Sputnik DAO treasury"
+                value={
+                  state.sputnik ? fmt(state.sputnik.token_balance) : "4,750"
+                }
+                unit={programToken}
+                color="lime"
+                footer={`therascals.sputnikv2.testnet · v${state.sputnik?.version ?? "2.3.1"}`}
+              />
+              <Metric
                 icon={<Coins />}
                 title="Rewards available"
                 value={fmt(state.treasury.reward_available)}
                 unit={programToken}
                 color="blue"
-                footer={`Reserved ${fmt(state.treasury.reward_reserved)} · Paid ${fmt(state.treasury.reward_paid)}`}
+                footer={`Funded by Sputnik grant · Paid ${fmt(state.treasury.reward_paid)}`}
               />
               <Metric
                 icon={<HandCoins />}
@@ -396,14 +448,6 @@ export default function App() {
                 footer={`Reserved ${fmt(state.treasury.agent_reserved)} · Paid ${fmt(state.treasury.agent_paid)}`}
               />
               <Metric
-                icon={<Vote />}
-                title="Open proposals"
-                value={String(activeProposals.length)}
-                unit="need your vote"
-                color="lime"
-                footer={`${state.config.members.length} DAO members`}
-              />
-              <Metric
                 icon={<FileCheck2 />}
                 title="Reviews in flight"
                 value={String(
@@ -411,7 +455,7 @@ export default function App() {
                 )}
                 unit="contribution jobs"
                 color="violet"
-                footer={`${jobs.length} total authorized`}
+                footer={`${jobs.length} total authorized · ${state.sputnik?.proposals.length ?? 3} Sputnik proposals`}
               />
             </section>
 
@@ -419,28 +463,45 @@ export default function App() {
               {(
                 [
                   ["programs", "Programs"],
+                  ["sputnik", "Sputnik DAO"],
+                  ["justhoot", "JustHoot Trenches"],
                   ["overview", "Overview"],
                   ["proposals", "Proposals"],
                   ["reviews", "Reviews"],
                   ["treasury", "Treasury"],
                 ] as [Panel, string][]
-              ).map(([key, label]) => (
-                <button
-                  key={key}
-                  className={panel === key ? "selected" : ""}
-                  onClick={() => setPanel(key)}
-                >
-                  {label}
-                  {key === "proposals" && activeProposals.length > 0 && (
-                    <span className="tab-count">{activeProposals.length}</span>
-                  )}
-                </button>
-              ))}
+              ).map(([key, label]) => {
+                const openSputnikCount =
+                  state.sputnik?.proposals.filter(
+                    (p) => p.status === "InProgress",
+                  ).length ?? 0;
+                return (
+                  <button
+                    key={key}
+                    className={panel === key ? "selected" : ""}
+                    onClick={() => setPanel(key)}
+                  >
+                    {label}
+                    {key === "sputnik" && openSputnikCount > 0 && (
+                      <span className="tab-count">{openSputnikCount}</span>
+                    )}
+                    {key === "proposals" && activeProposals.length > 0 && (
+                      <span className="tab-count">
+                        {activeProposals.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
               <div className="tabs-spacer" />
             </nav>
 
             {panel === "programs" && (
               <section className="card page-card programs-page">
+                <SputnikSummaryBanner
+                  state={state}
+                  onOpenSputnik={() => setPanel("sputnik")}
+                />
                 <CardTitle
                   kicker="BUILD THE ARCADE TOGETHER"
                   title="Contributor programs"
@@ -885,6 +946,22 @@ export default function App() {
               </section>
             )}
 
+            {panel === "sputnik" && (
+              <SputnikDaoPanel
+                state={state}
+                client={client!}
+                pending={pending}
+                act={run}
+              />
+            )}
+            {panel === "justhoot" && (
+              <JustHootPanel
+                state={state}
+                client={client!}
+                pending={pending}
+                act={run}
+              />
+            )}
             {panel === "treasury" && (
               <TreasuryPanel
                 state={state}
@@ -1353,6 +1430,22 @@ function JobCard({
       <div className="job-actions">
         {j.score === null && agent && (
           <span>Appointed agent may submit a bound verdict.</span>
+        )}
+        {j.score === null && !j.expired && (member || agent) && client.mode === "local-demo" && (
+          <button
+            type="button"
+            className="dao-ai-review-btn"
+            disabled={Boolean(pending)}
+            onClick={() =>
+              void act(
+                `job-${j.id}`,
+                () => client.local("ai_judge", { job_id: j.id }),
+                "Contribution evaluated by NEAR AI (Qwen 3.8 27B TEE). Verdict submitted.",
+              )
+            }
+          >
+            Review with NEAR AI (Qwen 3.8 TEE) <Sparkles size={13} />
+          </button>
         )}
         {j.score === null &&
           j.agent.outlayer &&

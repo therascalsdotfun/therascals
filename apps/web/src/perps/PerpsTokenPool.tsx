@@ -46,7 +46,13 @@ export function PerpsTokenPool({ game }: { game: PerpsGame }) {
         </button>
       </div>
       {!game.catalog ? (
-        <LoadingSkeleton kind="summary" />
+        !game.testnetRoute && game.mainnetEnabled === false ? (
+          <p className="perps-note" style={{ margin: "0.4rem 0 0" }}>
+            Mainnet Perps arcade pool is not enabled on this server.
+          </p>
+        ) : (
+          <LoadingSkeleton kind="summary" />
+        )
       ) : (
         <div className="perps-pool-chips">
           {frozen.map((m) => (

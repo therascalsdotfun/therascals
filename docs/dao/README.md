@@ -44,4 +44,4 @@ Council membership, threshold, token contract and epoch duration are fixed for t
 
 The current program uses a trusted appointed agent. Hosted OutLayer execution and independently verified hardware attestation are not active. See [OutLayer integration](outlayer.md) and the [worker interface](../../workers/contributor-verdict/README.md).
 
-This is a governed testnet prototype. TEST-USDC has no monetary value. Automatic merge watching, mainnet contributor economics and a protocol-token reward entitlement are not active.
+This is a governed testnet prototype. `RASCALS-TEST` (`rewards.rascals-council2-1104.testnet`) is a six-decimal test accounting token with no monetary value; holding it does not confer council voting rights. Automatic merge watching, mainnet contributor economics and a protocol-token reward entitlement are not active.

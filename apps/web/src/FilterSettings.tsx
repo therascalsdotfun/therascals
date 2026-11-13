@@ -12,6 +12,8 @@ import {
   milestonePosition,
   milestoneValue,
   milestoneLabel,
+  MAX_AGE_THREE_MONTHS,
+  MAX_AGE_ANY_STOP,
 } from "./filter-milestones.ts";
 import "./filter-settings.css";
 import { FilterCodePanel } from "./FilterCodePanel.tsx";
@@ -19,8 +21,15 @@ import { CommunityPresets } from "./CommunityPresets.tsx";
 
 const criteria = [
   {
-    key: "poolSize",
-    label: "Coins in the cage",
+    key: "minPoolSize",
+    label: "Minimum coins in the cage",
+    min: 2,
+    max: 32,
+    unit: "coins",
+  },
+  {
+    key: "maxPoolSize",
+    label: "Maximum coins in the cage",
     min: 2,
     max: 32,
     unit: "coins",
@@ -29,15 +38,16 @@ const criteria = [
     key: "minAgeMinutes",
     label: "Minimum age",
     min: 0,
-    max: 1440,
+    max: MAX_AGE_THREE_MONTHS,
     unit: "min",
   },
   {
     key: "maxAgeMinutes",
     label: "Maximum age",
     min: 0,
-    max: 1440,
+    max: MAX_AGE_THREE_MONTHS,
     unit: "min",
+    optional: true,
   },
   {
     key: "minMarketCap",
@@ -292,21 +302,69 @@ export function FilterSettings({
           const lowerKey = c.key.replace(/^max/, "min") as keyof FilterSpec;
           const upperKey = c.key.replace(/^min/, "max") as keyof FilterSpec;
           const min = c.key.startsWith("max")
-            ? Number(value[lowerKey] ?? c.min)
+            ? Number(
+                c.key === "maxPoolSize"
+                  ? (value.minPoolSize ?? c.min)
+                  : (value[lowerKey] ?? c.min),
+              )
             : c.min;
           const max = c.key.startsWith("min")
-            ? Number(value[upperKey] ?? c.max)
+            ? Number(
+                c.key === "minPoolSize"
+                  ? (value.maxPoolSize ?? value.poolSize ?? c.max)
+                  : (value[upperKey] ?? c.max),
+              )
             : c.max;
+          const sliderMax =
+            c.key === "maxAgeMinutes" ? MAX_AGE_ANY_STOP : max;
           const current =
-            value[c.key] ??
-            (c.key === "poolSize" ? 8 : c.key.startsWith("max") ? c.max : 0);
+            c.key === "maxAgeMinutes" && value.maxAgeMinutes === null
+              ? MAX_AGE_ANY_STOP
+              : c.key === "minPoolSize"
+                ? (value.minPoolSize ?? 2)
+                : c.key === "maxPoolSize"
+                  ? (value.maxPoolSize ?? value.poolSize ?? 8)
+                  : (value[c.key] ??
+                    (c.key.startsWith("max") ? c.max : 0));
           const stops = filterMilestones(c.key);
           const from = milestonePosition(min, stops);
-          const to = milestonePosition(max, stops);
-          const ticks = stops.filter((n) => n >= min && n <= max);
-          const numeric = value[c.key] ?? (c.key === "poolSize" ? 8 : null);
+          const to = milestonePosition(sliderMax, stops);
+          const ticks = stops.filter((n) => n >= min && n <= sliderMax);
+          const numeric =
+            c.key === "minPoolSize"
+              ? (value.minPoolSize ?? 2)
+              : c.key === "maxPoolSize"
+                ? (value.maxPoolSize ?? value.poolSize ?? 8)
+                : (value[c.key] ?? null);
           const text =
             numeric === null ? "Any" : `${numeric.toLocaleString()} ${c.unit}`;
+          const applyCriterionValue = (nextVal: number | null) => {
+            if (c.key === "maxPoolSize" && typeof nextVal === "number") {
+              onChange({
+                ...value,
+                maxPoolSize: nextVal,
+                poolSize: nextVal,
+              });
+              return;
+            }
+            if (c.key === "minPoolSize" && typeof nextVal === "number") {
+              const nextMax = Math.max(
+                nextVal,
+                value.maxPoolSize ?? value.poolSize ?? 8,
+              );
+              onChange({
+                ...value,
+                minPoolSize: nextVal,
+                maxPoolSize: nextMax,
+                poolSize: nextMax,
+              });
+              return;
+            }
+            onChange({
+              ...value,
+              [c.key]: nextVal,
+            });
+          };
           return (
             <div className="setting-row" key={c.key}>
               <label htmlFor={id}>{c.label}</label>
@@ -322,10 +380,7 @@ export function FilterSettings({
                   placeholder="Any"
                   value={numeric ?? ""}
                   onChange={(e) =>
-                    onChange({
-                      ...value,
-                      [c.key]: filterInput(c.key, e.target.value),
-                    })
+                    applyCriterionValue(filterInput(c.key, e.target.value))
                   }
                 />
                 <span>{c.unit}</span>
@@ -354,26 +409,32 @@ export function FilterSettings({
                         "log" in c
                           ? Math.max(1, Math.round(current * 0.05))
                           : 1;
-                      onChange({
-                        ...value,
-                        [c.key]: Math.max(
+                      applyCriterionValue(
+                        Math.max(
                           min,
                           Math.min(max, current + direction * step),
                         ),
-                      });
+                      );
                     }}
-                    onChange={(e) =>
-                      onChange({
-                        ...value,
-                        [c.key]: Math.max(
-                          min,
-                          Math.min(
-                            max,
-                            milestoneValue(Number(e.target.value), stops),
-                          ),
-                        ),
-                      })
-                    }
+                    onChange={(e) => {
+                      const rawVal = milestoneValue(
+                        Number(e.target.value),
+                        stops,
+                      );
+                      if (
+                        c.key === "maxAgeMinutes" &&
+                        rawVal > MAX_AGE_THREE_MONTHS
+                      ) {
+                        onChange({
+                          ...value,
+                          maxAgeMinutes: null,
+                        });
+                        return;
+                      }
+                      applyCriterionValue(
+                        Math.max(min, Math.min(max, rawVal)),
+                      );
+                    }}
                   />
                   <div
                     className="setting-milestones"
@@ -464,6 +525,28 @@ export function FilterSettings({
             checked={value.hasWebsite}
             onChange={(e) =>
               onChange({ ...value, hasWebsite: e.target.checked })
+            }
+          />
+        </div>
+        <div className="setting-row setting-choice">
+          <label htmlFor={`${prefix}-bonding-curve`}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <img
+                src="/brands/justhoot/logo.png"
+                alt=""
+                width={16}
+                height={16}
+                style={{ borderRadius: 3, verticalAlign: "middle" }}
+              />
+              Include bonding-curve tokens (JustHoot)
+            </span>
+          </label>
+          <input
+            id={`${prefix}-bonding-curve`}
+            type="checkbox"
+            checked={value.includeBondingCurve ?? false}
+            onChange={(e) =>
+              onChange({ ...value, includeBondingCurve: e.target.checked })
             }
           />
         </div>

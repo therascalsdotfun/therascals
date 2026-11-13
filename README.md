@@ -153,6 +153,7 @@ Built for the **NEAR Hackathon**, bridging fast meme discovery with NEAR's infra
 
 ### 2. Contributor DAO on NEAR Testnet (`v2.rascals-dao-1104.testnet`)
 - Custom Rust smart contract deployed on NEAR testnet.
+- **Reward asset**: `RASCALS-TEST`, a six-decimal NEP-141 test token at `rewards.rascals-council2-1104.testnet` with 1,000,000 issued tokens and no monetary value. Its [dedicated contract](contracts/rascals-test-token) preserves balances and DAO references through the metadata rename. Holding it does not grant a council vote; the production protocol token has not launched.
 - **Council Governance**: Council members vote to approve programs and authorize bounties for merged pull requests.
 - **Deterministic Review Worker**: An automated review worker parses GitHub merge evidence, hashes proof digests, scores contributions against rubrics, and submits on-chain verdicts.
 - **Challenge Period & Treasury Protection**: Payouts remain locked during a challenge window to prevent malicious claims, before releasing funds to the contributor.
@@ -273,7 +274,8 @@ therascals/
 ├── contracts/
 │   ├── contributor-dao/        # Rust NEAR smart contract for council voting & bounty claims
 │   ├── jackpot-session/        # Rust NEAR smart contract for draw session commitments
-│   └── demo-usdc/              # Testnet utility token implementations
+│   ├── demo-usdc/              # Separate TEST-USDC fee-test asset
+│   └── rascals-test-token/     # RASCALS-TEST NEP-141 reward asset
 ├── workers/
 │   └── contributor-verdict/    # Deterministic review worker scoring PR evidence
 ├── deploy/                     # Dockerfiles, Caddy configs, and host deployment automation
@@ -288,7 +290,7 @@ therascals/
 - **Non-Custodial**: The application holds zero user funds and never prompts for private keys or seed phrases. All swaps require explicit approval in your connected wallet.
 - **Fair Randomness**: Lottery winners are determined by server-side commitments made before the visual reveal. The client cannot manipulate draw outcomes.
 - **Honest Economics**: Protocol fees (0.5% entry policy) have been verified in isolated testing and are currently disabled on mainnet. Free reveals cost zero dollars and place no on-chain trades.
-- **Testnet Governance**: Contributor DAO contracts operate on NEAR testnet (`*.testnet`). Distributed tokens represent governance test credits with zero monetary value.
+- **Testnet Governance**: Contributor DAO contracts operate on NEAR testnet (`*.testnet`). RASCALS-TEST rewards are test accounting assets with zero monetary value; token ownership does not confer council voting rights.
 
 ---
 

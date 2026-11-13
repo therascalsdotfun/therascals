@@ -1,6 +1,14 @@
 /** External token art is display-only. Never proxy an arbitrary token URL. */
 export function tokenImageUrl(value: unknown): string | null {
-  if (typeof value !== "string" || value.length > 2048) return null;
+  if (typeof value !== "string" || value.length === 0) return null;
+  if (/^\/brands\/[a-z0-9/_-]+\.(?:png|webp|jpg|jpeg|svg)$/i.test(value))
+    return value;
+  if (
+    value.length <= 32768 &&
+    /^data:image\/(?:webp|png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(value)
+  )
+    return value;
+  if (value.length > 2048) return null;
   try {
     const u = new URL(value),
       h = u.hostname.toLowerCase();

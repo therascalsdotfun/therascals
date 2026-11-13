@@ -80,6 +80,10 @@ export function TokenTicker({
     </span>
   );
 }
+const tradeXyzArtwork: Record<string, string> = {
+  JIO: "https://app.trade.xyz/markets/jio.svg",
+  RELIANCE: "https://app.trade.xyz/markets/reliance.svg",
+};
 const perpsArtwork = new Set([
   "BTC",
   "ETH",
@@ -105,6 +109,9 @@ const perpsArtwork = new Set([
   "FARTCOIN",
   "TRUMP",
   "MEME",
+  "JIO",
+  "RELIANCE",
+  "PEARL",
 ]);
 export function PerpsIcon({
   symbol,
@@ -120,11 +127,12 @@ export function PerpsIcon({
       size={size}
       branded
       src={
-        hasBrandedTokenIcon(asset)
+        tradeXyzArtwork[asset] ??
+        (hasBrandedTokenIcon(asset)
           ? undefined
           : perpsArtwork.has(asset)
             ? `https://app.hyperliquid.xyz/coins/${asset}.svg`
-            : undefined
+            : undefined)
       }
     />
   );
@@ -143,11 +151,12 @@ export function PerpsTicker({
       size={size}
       branded
       src={
-        hasBrandedTokenIcon(asset)
+        tradeXyzArtwork[asset] ??
+        (hasBrandedTokenIcon(asset)
           ? undefined
           : perpsArtwork.has(asset)
             ? `https://app.hyperliquid.xyz/coins/${asset}.svg`
-            : undefined
+            : undefined)
       }
     />
   );

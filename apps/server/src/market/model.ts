@@ -99,6 +99,12 @@ export function evaluateFilters(
   f: FilterSpec,
   now: number,
 ): { matches: boolean; reasons: string[] } {
+  if (t.launchpad === "justhoot") {
+    if (!f.includeBondingCurve)
+      return { matches: false, reasons: ["bonding_curve_excluded"] };
+    const jhReasons = [...cageUniverseReasons(t, now), ...selectionReasons(t, f)];
+    return { matches: jhReasons.length === 0, reasons: jhReasons };
+  }
   const reasons: string[] = [
       ...cageUniverseReasons(t, now),
       ...selectionReasons(t, f),
@@ -114,7 +120,8 @@ export function evaluateFilters(
     const age = (now - Date.parse(ageAt)) / 60000;
     if (age < 0) reasons.push("future_timestamp");
     else if (age < f.minAgeMinutes) reasons.push("age_too_young");
-    else if (age > f.maxAgeMinutes) reasons.push("age_too_old");
+    else if (f.maxAgeMinutes !== null && age > f.maxAgeMinutes)
+      reasons.push("age_too_old");
   }
   const min = (m: Metric, b: number | null, missing: string, low: string) => {
     if (b === null || b === 0) return;
@@ -183,7 +190,8 @@ export function admissionReasons(t: TokenObservation, now: number): string[] {
       r.push("stale_metadata");
     if (d < 0) r.push("future_timestamp");
   }
-  if (t.chain === "near") r.push("near_screening_not_configured");
+  if (t.chain === "near" && t.launchpad !== "justhoot")
+    r.push("near_screening_not_configured");
   if (t.chain && t.chain !== "solana") return r; // Preview chains never use Solana authority claims.
   if (t.mintAuthorityDisabled !== true)
     r.push(
@@ -207,11 +215,7 @@ function cageUniverseReasons(t: TokenObservation, now: number): string[] {
     r.push("unknown_market_cap");
   else if (cap >= 100000000) r.push("outside_small_cap_cage");
   const firstPool = Date.parse(t.firstPoolCreatedAt ?? "");
-  if (
-    !Number.isFinite(firstPool) ||
-    now < firstPool ||
-    now - firstPool > 86400000
-  )
+  if (!Number.isFinite(firstPool) || now < firstPool)
     r.push("outside_fresh_cage_window");
   return r;
 }

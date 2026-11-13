@@ -38,7 +38,8 @@ export function projectionDeadline(
     boundary(pool + 86400000);
     boundary(age);
     boundary(age + view.filters.minAgeMinutes * 60000);
-    boundary(age + view.filters.maxAgeMinutes * 60000);
+    if (view.filters.maxAgeMinutes !== null)
+      boundary(age + view.filters.maxAgeMinutes * 60000);
     const source = Date.parse(t.sourceUpdatedAt ?? "");
     boundary(source);
     boundary(source + (t.chain && t.chain !== "solana" ? 120000 : 60000));
@@ -92,7 +93,7 @@ export class PageCache {
       entry = { view, until: projectionDeadline(view, state) };
       this.entries.delete(key);
       this.entries.set(key, entry);
-      while (this.entries.size > 2)
+      while (this.entries.size > 16)
         this.entries.delete(this.entries.keys().next().value!);
     }
     return pageProjection(entry.view, options);

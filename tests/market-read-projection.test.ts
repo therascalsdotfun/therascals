@@ -46,6 +46,7 @@ it("matches the full catalog projection, counts and manual identities without de
       ticketAtomic: "5000000",
       filters: {
         ...BROAD_FILTERS,
+        maxAgeMinutes: 1440,
         tokenSelection: {
           included: [tokens[290].mint],
           excluded: [tokens[0].mint],

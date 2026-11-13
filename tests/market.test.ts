@@ -149,8 +149,19 @@ it("keeps the cage fresh and below $100m even with unlimited saved filters", () 
     },
     now,
   )!;
-  expect(evaluateFilters(old, unrestricted, now).matches).toBe(false);
-  expect(admissionReasons(old, now)).toContain("outside_fresh_cage_window");
+  expect(
+    evaluateFilters(old, { ...unrestricted, maxAgeMinutes: 1440 }, now).matches,
+  ).toBe(false);
+  const futurePool = normalizeJupiter(
+    {
+      ...raw(),
+      firstPool: { createdAt: new Date(now + 60000).toISOString() },
+    },
+    now,
+  )!;
+  expect(admissionReasons(futurePool, now)).toContain(
+    "outside_fresh_cage_window",
+  );
 });
 
 it("does not flag a token merely because isSus:false is present", () => {

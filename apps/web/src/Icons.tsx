@@ -78,3 +78,23 @@ export function ChainLogo({
     />
   );
 }
+
+export function JustHootLogo({
+  size = 20,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <img
+      src="/brands/justhoot/logo.png"
+      width={size}
+      height={size}
+      alt="JustHoot"
+      aria-hidden="true"
+      className={`justhoot-logo ${className}`}
+      style={{ borderRadius: 4, objectFit: "contain", verticalAlign: "middle" }}
+    />
+  );
+}

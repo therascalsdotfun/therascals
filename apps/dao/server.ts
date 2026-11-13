@@ -1,3 +1,4 @@
+import { evaluateContributionWithNearAi } from "./near-ai.ts";
 import Fastify from "fastify";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
@@ -13,6 +14,7 @@ const methods = [
   "vote",
   "execute",
   "judge",
+  "ai_judge",
   "submit_verdict",
   "challenge",
   "expire_job",
@@ -83,7 +85,34 @@ export function buildDaoServer(
     const before = structuredClone(model.state);
     try {
       const { method, args, actor } = parsed.data;
-      const result = model.call(method, args, actor);
+      let result: unknown;
+      if (method === "ai_judge") {
+        const jobId = Number(args.job_id);
+        const j = model.state.jobs.find((job) => job.id === jobId);
+        if (!j) throw Error("Job not found");
+        const aiAssessment = await evaluateContributionWithNearAi({
+          repo: j.request.repo,
+          prNumber: j.request.pr_number,
+          mergeSha: j.request.merge_sha,
+        });
+        result = model.call(
+          "judge",
+          {
+            job_id: jobId,
+            assessment: {
+              impact: aiAssessment.impact,
+              security: aiAssessment.security,
+              verification: aiAssessment.verification,
+              maintenance: aiAssessment.maintenance,
+            },
+            rationale: `NEAR AI TEE review (${aiAssessment.model}): ${aiAssessment.rationale}`,
+            source: "near-ai-qwen-3.8-tee",
+          },
+          actor,
+        );
+      } else {
+        result = model.call(method, args, actor);
+      }
       mkdirSync(dirname(store), { recursive: true, mode: 0o700 });
       const temp = store + ".pending";
       writeFileSync(temp, JSON.stringify(model.state, null, 2), {

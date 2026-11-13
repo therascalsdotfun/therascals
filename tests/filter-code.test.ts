@@ -20,6 +20,7 @@ const base = () => ({
 const custom = () => ({
   ...discoveryPreset("broad"),
   chains: ["solana", "base"] as ("solana" | "base")[],
+  maxAgeMinutes: 1440,
   maxLiquidity: 120000,
   maxVolume5m: 40000,
   maxHolders: 4000,

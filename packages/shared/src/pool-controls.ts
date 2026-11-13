@@ -1,9 +1,18 @@
 import type { FilterSpec } from "./market.ts";
 export const MAX_DRAW_COINS = 32;
-export function desiredPoolSize(filters: FilterSpec) {
+export function minDesiredPoolSize(filters: FilterSpec) {
   return Math.max(
     2,
-    Math.min(MAX_DRAW_COINS, Math.trunc(filters.poolSize ?? 8)),
+    Math.min(MAX_DRAW_COINS, Math.trunc(filters.minPoolSize ?? 2)),
+  );
+}
+export function desiredPoolSize(filters: FilterSpec) {
+  return Math.max(
+    minDesiredPoolSize(filters),
+    Math.min(
+      MAX_DRAW_COINS,
+      Math.trunc(filters.maxPoolSize ?? filters.poolSize ?? 8),
+    ),
   );
 }
 export function adjustPool(filters: FilterSpec, direction: 1 | -1): FilterSpec {

@@ -65,7 +65,7 @@ it("rejects custom filters outside the small fresh cage bounds", async () => {
   for (const filters of [
     { maxMarketCap: 100000000 },
     { minMarketCap: 100000000 },
-    { maxAgeMinutes: 1441 },
+    { maxAgeMinutes: 129601 },
   ]) {
     expect(
       (
@@ -100,7 +100,7 @@ it("accepts narrative filters and tighter presets, rejecting invented narrative 
       })
     ).statusCode,
   ).toBe(200);
-  expect(calls[0].filters.minMarketCap).toBe(100000);
+  expect(calls[0].filters.minMarketCap).toBe(25000);
   expect(calls[0].filters.memeTypes).toEqual(["politics", "tech"]);
   expect(
     (

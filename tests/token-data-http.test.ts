@@ -57,3 +57,42 @@ it("never answers a provider fault with the provider's own words", async () => {
   });
   await curated.close();
 });
+
+it("serves validated observed token art safely and supports JustHoot chart metadata", async () => {
+  const solMint = bs58.encode(new Uint8Array(32).fill(15));
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response(new Uint8Array([137, 80, 78, 71]), {
+      status: 200,
+      headers: { "content-type": "image/png" },
+    })) as typeof fetch;
+
+  const app = await createApp({
+    observedIconUrl: (mint: string) =>
+      mint === solMint ? "https://cdn.dexscreener.com/icon.png" : null,
+    snapshot: () => ({ pool: [] }),
+  });
+
+  try {
+    expect((await app.inject("/api/token-art/bad%2Fmint")).statusCode).toBe(400);
+    expect((await app.inject("/api/token-art/unobserved123")).statusCode).toBe(
+      404,
+    );
+    const artRes = await app.inject("/api/token-art/" + solMint);
+    expect(artRes.statusCode).toBe(200);
+    expect(artRes.headers["content-type"]).toContain("image/png");
+
+    const jhChart = await app.inject(
+      "/api/charts/hoot-8ecf65.launchpad.justhoot.near?range=1m",
+    );
+    expect(jhChart.statusCode).toBe(200);
+    expect(jhChart.json()).toMatchObject({
+      source: "JustHoot",
+      chain: "near",
+      symbol: "HOOT",
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    await app.close();
+  }
+});

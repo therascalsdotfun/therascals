@@ -56,6 +56,37 @@ describe("Hyperliquid perps market catalog", () => {
     expect(list.some((market) => market.name === "NOTLISTED")).toBe(false);
   });
 
+  it("classifies pre-IPO equities and ecosystem perps (JIO, RELIANCE, PEARL) when listed", () => {
+    const extended = classifyPerpsMarkets([
+      ...meta,
+      { name: "xyz:JIO", maxLeverage: 10, szDecimals: 1 },
+      { name: "xyz:RELIANCE", maxLeverage: 10, szDecimals: 1 },
+      { name: "PEARL", maxLeverage: 10, szDecimals: 1 },
+    ]);
+    const jio = extended.find((m) => m.name === "xyz:JIO");
+    const reliance = extended.find((m) => m.name === "xyz:RELIANCE");
+    const pearl = extended.find((m) => m.name === "PEARL");
+
+    expect(jio).toMatchObject({
+      name: "xyz:JIO",
+      display: "JIO",
+      universe: "equity",
+      maxLeverage: 10,
+    });
+    expect(reliance).toMatchObject({
+      name: "xyz:RELIANCE",
+      display: "RELIANCE",
+      universe: "equity",
+      maxLeverage: 10,
+    });
+    expect(pearl).toMatchObject({
+      name: "PEARL",
+      display: "PEARL",
+      universe: "meme",
+      maxLeverage: 10,
+    });
+  });
+
   it("filters leverage tiers to the market maximum and keeps the average near 10x", () => {
     expect(perpsLeverageChoices(5).map((choice) => choice.leverage)).toEqual([
       3, 5,

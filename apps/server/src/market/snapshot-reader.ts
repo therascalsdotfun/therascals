@@ -23,26 +23,28 @@ parentPort!.on(
       const value =
         request.kind === "candidates"
           ? service.warmingCandidates(request.configuration)
-          : request.options.matchingOnly
-            ? service.snapshot(request.options, request.configuration)
-            : pages.read(
-                createHash("sha256")
-                  .update(
-                    JSON.stringify([
-                      store.catalogVersion(),
-                      request.configuration,
-                      request.state,
-                    ]),
-                  )
-                  .digest("hex"),
-                request.options,
-                request.state,
-                () =>
-                  service.snapshot(
-                    { limit: Number.MAX_SAFE_INTEGER },
+          : pages.read(
+              createHash("sha256")
+                .update(
+                  JSON.stringify([
+                    store.catalogVersion(),
+                    Boolean(request.options.matchingOnly),
                     request.configuration,
-                  ),
-              );
+                    request.state,
+                  ]),
+                )
+                .digest("hex"),
+              request.options,
+              request.state,
+              () =>
+                service.snapshot(
+                  {
+                    matchingOnly: request.options.matchingOnly,
+                    limit: Number.MAX_SAFE_INTEGER,
+                  },
+                  request.configuration,
+                ),
+            );
       parentPort!.postMessage({
         id: request.id,
         value:

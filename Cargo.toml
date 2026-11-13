@@ -1,5 +1,5 @@
 [workspace]
-members = ["contracts/mpc-probe", "contracts/jackpot-session", "contracts/fee-vault", "contracts/demo-usdc", "contracts/fee-receipts", "contracts/contributor-dao"]
+members = ["contracts/mpc-probe", "contracts/jackpot-session", "contracts/fee-vault", "contracts/demo-usdc", "contracts/fee-receipts", "contracts/contributor-dao", "contracts/rascals-test-token"]
 resolver = "2"
 [profile.release]
 codegen-units = 1

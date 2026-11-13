@@ -301,7 +301,7 @@ mod tests {
         context("usdc.testnet", 0);
         receive(&mut v, 25000, message("r", 5000000));
         context("owner.testnet", 1);
-        v.withdraw(account("owner.testnet"), U128(10000));
+        let _ = v.withdraw(account("owner.testnet"), U128(10000));
         assert_eq!(v.available, 15000);
         assert_eq!(v.pending, 10000);
         context("fees.testnet", 0);
@@ -309,7 +309,7 @@ mod tests {
         assert_eq!(v.available, 25000);
         assert_eq!(v.pending, 0);
         context("owner.testnet", 1);
-        v.withdraw(account("owner.testnet"), U128(25000));
+        let _ = v.withdraw(account("owner.testnet"), U128(25000));
         context("fees.testnet", 0);
         assert!(v.resolve_withdrawal(U128(25000), Ok(())));
         assert_eq!(v.available, 0);
@@ -321,7 +321,7 @@ mod tests {
     fn unauthorized_withdrawal() {
         let mut v = vault();
         context("attacker.testnet", 1);
-        v.withdraw(account("attacker.testnet"), U128(1));
+        let _ = v.withdraw(account("attacker.testnet"), U128(1));
     }
     #[test]
     #[should_panic(expected = "Withdrawal already pending")]
@@ -329,8 +329,8 @@ mod tests {
         let mut v = vault();
         v.available = 25000;
         context("owner.testnet", 1);
-        v.withdraw(account("owner.testnet"), U128(10000));
-        v.withdraw(account("owner.testnet"), U128(10000));
+        let _ = v.withdraw(account("owner.testnet"), U128(10000));
+        let _ = v.withdraw(account("owner.testnet"), U128(10000));
     }
     #[test]
     fn state_roundtrip_preserves_receipts_and_balances() {

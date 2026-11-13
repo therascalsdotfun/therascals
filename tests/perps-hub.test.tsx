@@ -31,6 +31,17 @@ it("renders the confidential perps hub with near.com integration by default", ()
   expect(html).toContain("SOL-PERP");
 });
 
+it("supports pre-IPO equities and ecosystem perps (JIO, RELIANCE, PEARL) via perps.near.com and trade.xyz", () => {
+  const html = renderToStaticMarkup(<PerpsPage game={mockGame} />);
+  expect(html).toContain("JIO-PERP");
+  expect(html).toContain("RELIANCE-PERP");
+  expect(html).toContain("PEARL-PERP");
+  expect(html).toContain("trade.xyz");
+  expect(html).toContain("India’s biggest IPO");
+  expect(html).toContain("Pre-IPO &amp; Equities 24/7");
+  expect(html).toContain("NEAR Ecosystem");
+});
+
 it("includes mode toggle between confidential hub and arcade slot mode", () => {
   const html = renderToStaticMarkup(<PerpsPage game={mockGame} />);
   expect(html).toContain("Confidential Hub (near.com)");

@@ -103,6 +103,27 @@ export class HyperliquidClient implements HyperliquidVenue {
         szDecimals: asset.szDecimals,
       });
     });
+    try {
+      const xyz = (await this.info.meta({ dex: "xyz" } as any)) as {
+        universe?: {
+          name: string;
+          maxLeverage: number;
+          szDecimals: number;
+          isDelisted?: boolean;
+        }[];
+      };
+      xyz?.universe?.forEach((asset, index) => {
+        if (asset.isDelisted) return;
+        byName.set(asset.name, {
+          index: 10000 + index,
+          name: asset.name,
+          maxLeverage: asset.maxLeverage,
+          szDecimals: asset.szDecimals,
+        });
+      });
+    } catch {
+      // HIP-3 dex is optional
+    }
     const markets = classifyPerpsMarkets([...byName.values()]);
     this.cache = { at: Date.now(), byName, markets };
     return this.cache;
@@ -114,13 +135,30 @@ export class HyperliquidClient implements HyperliquidVenue {
 
   async market(coin: string) {
     const meta = await this.meta();
-    const raw = meta.byName.get(coin);
+    const raw = meta.byName.get(coin) ?? meta.byName.get(`xyz:${coin}`);
     if (!raw) return null;
-    const market = meta.markets.find((entry) => entry.name === coin);
+    const market = meta.markets.find(
+      (entry) => entry.name === raw.name || entry.display === coin,
+    );
     return market ? { market, index: raw.index } : null;
   }
 
   async markPrice(coin: string): Promise<number> {
+    const isXyz =
+      coin.startsWith("xyz:") || coin === "JIO" || coin === "RELIANCE";
+    if (isXyz) {
+      try {
+        const xyzMids = (await this.info.allMids({ dex: "xyz" } as any)) as Record<
+          string,
+          string
+        >;
+        const raw = xyzMids[coin] ?? xyzMids[`xyz:${coin}`];
+        const px = Number(raw);
+        if (Number.isFinite(px) && px > 0) return px;
+      } catch {
+        // fall through to default allMids
+      }
+    }
     const mids = await this.info.allMids();
     const price = Number(mids[coin]);
     if (!Number.isFinite(price) || price <= 0)

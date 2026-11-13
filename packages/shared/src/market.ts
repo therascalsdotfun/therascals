@@ -57,10 +57,12 @@ export interface FilterSpec {
   chains?: import("./token-selection.ts").DiscoveryChain[];
   tokenSelection?: import("./token-selection.ts").TokenSelection;
   poolSize?: number;
+  minPoolSize?: number;
+  maxPoolSize?: number;
   memeTypes?: MemeType[];
   ageBasis: "mint" | "first_pool";
   minAgeMinutes: number;
-  maxAgeMinutes: number;
+  maxAgeMinutes: number | null;
   minMarketCap: number | null;
   maxMarketCap: number | null;
   minLiquidity: number | null;
@@ -78,6 +80,7 @@ export interface FilterSpec {
   hasTelegram?: boolean;
   hasX: boolean;
   hasWebsite: boolean;
+  includeBondingCurve?: boolean;
 }
 export interface ProviderHealth {
   state: "starting" | "live" | "error" | "rate_limited";

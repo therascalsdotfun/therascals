@@ -38,6 +38,8 @@ export const filterPatchSchema = z
       )
       .refine((x) => !x.included.some((id) => x.excluded.includes(id))),
     poolSize: z.number().int().min(2).max(32),
+    minPoolSize: z.number().int().min(2).max(32),
+    maxPoolSize: z.number().int().min(2).max(32),
     memeTypes: z
       .array(
         z.enum([
@@ -53,8 +55,8 @@ export const filterPatchSchema = z
       )
       .max(8),
     ageBasis: z.enum(["mint", "first_pool"]),
-    minAgeMinutes: bound.max(1440),
-    maxAgeMinutes: bound.max(1440),
+    minAgeMinutes: bound.max(129600),
+    maxAgeMinutes: bound.max(129600).nullable(),
     minMarketCap: bound.lt(100000000).nullable(),
     maxMarketCap: bound.lt(100000000).nullable(),
     minLiquidity: optional,
@@ -72,6 +74,7 @@ export const filterPatchSchema = z
     hasTelegram: z.boolean(),
     hasX: z.boolean(),
     hasWebsite: z.boolean(),
+    includeBondingCurve: z.boolean().optional(),
   })
   .partial()
   .strict();
@@ -80,6 +83,7 @@ export const filterPatchSchema = z
 export function validFilterRanges(f: FilterSpec) {
   return (
     [
+      ["minPoolSize", "maxPoolSize"],
       ["minAgeMinutes", "maxAgeMinutes"],
       ["minMarketCap", "maxMarketCap"],
       ["minLiquidity", "maxLiquidity"],

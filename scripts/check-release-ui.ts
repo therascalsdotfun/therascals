@@ -14,6 +14,7 @@ const forbidden = [
   "Fee discount lab",
   "Test Mode",
   "TEST-USDC",
+  "RASCALS-TEST",
   "Set up test funds",
   ".local-dev/",
 ];

@@ -98,16 +98,119 @@ export interface ReviewJob {
   reward_status: "reserved" | "pending" | "paid" | "released";
   agent_status: "reserved" | "pending" | "paid" | "released";
 }
+
+export interface SputnikConfig {
+  name: string;
+  purpose: string;
+  metadata: string;
+}
+export interface SputnikRole {
+  name: string;
+  kind: "Everyone" | { Group: string[] } | { Member: string };
+  permissions: string[];
+  vote_policy: Record<string, unknown>;
+}
+export interface SputnikPolicy {
+  roles: SputnikRole[];
+  default_vote_policy: {
+    weight_kind: string;
+    quorum: string;
+    threshold: [number, number] | string;
+  };
+  proposal_bond: string;
+  proposal_period: string;
+  bounty_bond: string;
+  bounty_forgiveness_period: string;
+}
+export interface SputnikFunctionCallAction {
+  method_name: string;
+  args: string;
+  deposit: string;
+  gas: string;
+}
+export type SputnikProposalKind =
+  | {
+      FunctionCall: {
+        receiver_id: string;
+        actions: SputnikFunctionCallAction[];
+      };
+    }
+  | {
+      Transfer: {
+        token_id: string;
+        receiver_id: string;
+        amount: string;
+        msg?: string | null;
+      };
+    }
+  | {
+      AddBounty: {
+        bounty: {
+          description: string;
+          token: string;
+          amount: string;
+          times: number;
+          max_deadline: string;
+        };
+      };
+    }
+  | Record<string, unknown>;
+
+export type SputnikProposalStatus =
+  | "InProgress"
+  | "Approved"
+  | "Rejected"
+  | "Removed"
+  | "Expired"
+  | "Moved"
+  | "Failed";
+
+export type SputnikVote = "Approve" | "Reject" | "Remove";
+export type SputnikVoteAction = "VoteApprove" | "VoteReject" | "VoteRemove";
+
+export interface SputnikProposal {
+  id: number;
+  proposer: string;
+  description: string;
+  kind: SputnikProposalKind;
+  status: SputnikProposalStatus;
+  vote_counts: Record<string, [number, number, number]>;
+  votes: Record<string, SputnikVote>;
+  submission_time: string;
+}
+
+export interface SputnikBounty {
+  id: number;
+  description: string;
+  token: string;
+  amount: string;
+  times: number;
+  max_deadline: string;
+}
+
+export interface SputnikDaoState {
+  contract_id: string;
+  factory_id: string;
+  version: string;
+  config: SputnikConfig;
+  policy: SputnikPolicy;
+  token_balance: string;
+  proposals: SputnikProposal[];
+  bounties: SputnikBounty[];
+}
+
 export interface DaoState {
   mode: Mode;
   network?: string;
   contract_id?: string | null;
+  sputnik_dao_id?: string | null;
   token_symbol?: string;
   token_decimals?: number;
   config: DaoConfig;
   treasury: Treasury;
   proposals: Proposal[];
   jobs: ReviewJob[];
+  sputnik?: SputnikDaoState | null;
   now_ns: number;
   local_token: string | null;
   actor: string | null;
@@ -135,10 +238,25 @@ export interface DaoClient {
     actor?: string,
   ): Promise<void>;
   local(
-    method: "fund" | "judge" | "advance_time" | "reset",
+    method: "fund" | "judge" | "ai_judge" | "advance_time" | "reset",
     args?: Record<string, unknown>,
     actor?: string,
   ): Promise<void>;
+  sputnikProposeGrant?(
+    bucket: Bucket,
+    amountAtomic: string,
+    tokenId: string,
+    description: string,
+    bondYocto?: string,
+  ): Promise<void>;
+  sputnikProposeBounty?(
+    description: string,
+    amountAtomic: string,
+    tokenId: string,
+    times: number,
+    bondYocto?: string,
+  ): Promise<void>;
+  sputnikVote?(proposalId: number, action: SputnikVoteAction): Promise<void>;
 }
 
 export class LocalDaoClient implements DaoClient {
@@ -185,7 +303,7 @@ export class LocalDaoClient implements DaoClient {
     await this.request("/api/dao/call", { method, args, actor });
   }
   async local(
-    method: "fund" | "judge" | "advance_time" | "reset",
+    method: "fund" | "judge" | "ai_judge" | "advance_time" | "reset",
     args: Record<string, unknown> = {},
     actor = this.actor ?? undefined,
   ): Promise<void> {
@@ -194,6 +312,9 @@ export class LocalDaoClient implements DaoClient {
 }
 
 export const nearTestnetRpc = "https://rpc.testnet.fastnear.com";
+export const defaultSputnikDaoId = "therascals.sputnikv2.testnet";
+export const defaultSputnikFactoryId = "sputnikv2.testnet";
+
 export async function viewNear<T>(
   contractId: string,
   methodName: string,
@@ -229,6 +350,15 @@ export async function viewNear<T>(
   return JSON.parse(new TextDecoder().decode(resultBytes)) as T;
 }
 
+function encodeBase64Json(obj: unknown): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
 export class NearDaoClient implements DaoClient {
   readonly mode = "near-testnet" as const;
   private connector: import("@hot-labs/near-connect").NearConnector | null =
@@ -237,9 +367,14 @@ export class NearDaoClient implements DaoClient {
     ReturnType<import("@hot-labs/near-connect").NearConnector["wallet"]>
   > | null = null;
   private accountId: string | null = null;
-  constructor(readonly contractId: string) {
+  constructor(
+    readonly contractId: string,
+    readonly sputnikDaoId: string = defaultSputnikDaoId,
+  ) {
     if (!/^[a-z0-9]+(?:[._-][a-z0-9]+)*\.testnet$/.test(contractId))
       throw new Error("Enter a NEAR testnet contract account.");
+    if (!/^[a-z0-9]+(?:[._-][a-z0-9]+)*\.testnet$/.test(sputnikDaoId))
+      throw new Error("Enter a NEAR testnet Sputnik DAO account.");
   }
   async connect(): Promise<string> {
     this.accountId = null;
@@ -259,6 +394,49 @@ export class NearDaoClient implements DaoClient {
       throw new Error("Connect a NEAR testnet account in your wallet.");
     this.accountId = account.accountId;
     return this.accountId;
+  }
+  private async loadSputnik(tokenId: string): Promise<SputnikDaoState | null> {
+    try {
+      const [version, config, policy, proposals, bounties, tokenBalance] =
+        await Promise.all([
+          viewNear<string>(this.sputnikDaoId, "version"),
+          viewNear<SputnikConfig>(this.sputnikDaoId, "get_config"),
+          viewNear<SputnikPolicy>(this.sputnikDaoId, "get_policy"),
+          viewNear<SputnikProposal[]>(this.sputnikDaoId, "get_proposals", {
+            from_index: 0,
+            limit: 50,
+          }),
+          viewNear<SputnikBounty[]>(this.sputnikDaoId, "get_bounties", {
+            from_index: 0,
+            limit: 50,
+          }).catch(() => []),
+          viewNear<string>(tokenId, "ft_balance_of", {
+            account_id: this.sputnikDaoId,
+          }).catch(() => "0"),
+        ]);
+      if (
+        typeof version !== "string" ||
+        !config ||
+        typeof config.name !== "string" ||
+        !policy ||
+        !Array.isArray(policy.roles) ||
+        !Array.isArray(proposals)
+      ) {
+        return null;
+      }
+      return {
+        contract_id: this.sputnikDaoId,
+        factory_id: defaultSputnikFactoryId,
+        version,
+        config,
+        policy,
+        token_balance: typeof tokenBalance === "string" ? tokenBalance : "0",
+        proposals,
+        bounties: Array.isArray(bounties) ? bounties : [],
+      };
+    } catch {
+      return null;
+    }
   }
   async load(): Promise<DaoState> {
     const [config, treasury] = await Promise.all([
@@ -284,10 +462,13 @@ export class NearDaoClient implements DaoClient {
       jobs.push(...jobPage);
       if (page.length < 100) break;
     }
-    const tokenMetadata = await viewNear<{ decimals: number; symbol?: string }>(
-      config.token_id,
-      "ft_metadata",
-    ).catch(() => null);
+    const [tokenMetadata, sputnik] = await Promise.all([
+      viewNear<{ decimals: number; symbol?: string }>(
+        config.token_id,
+        "ft_metadata",
+      ).catch(() => null),
+      this.loadSputnik(config.token_id),
+    ]);
     if (!tokenMetadata || tokenMetadata.decimals !== 6)
       throw new Error(
         "This prototype currently supports only NEP-141 reward tokens with 6 decimals. Token metadata was unavailable or used a different precision.",
@@ -296,12 +477,14 @@ export class NearDaoClient implements DaoClient {
       mode: "near-testnet",
       network: "NEAR testnet",
       contract_id: this.contractId,
+      sputnik_dao_id: this.sputnikDaoId,
       token_symbol: tokenMetadata.symbol ?? config.token_id,
       token_decimals: tokenMetadata.decimals,
       config,
       treasury,
       proposals,
       jobs,
+      sputnik,
       now_ns: Date.now() * 1_000_000,
       local_token: null,
       actor: this.accountId,
@@ -425,6 +608,147 @@ export class NearDaoClient implements DaoClient {
     if (!/^\d{1,39}$/.test(yoctoNear) || BigInt(yoctoNear) <= 0n)
       throw new Error("Enter a positive yoctoNEAR amount.");
     await this.call("fund_compute", { deposit: yoctoNear });
+  }
+  async sputnikProposeGrant(
+    bucket: Bucket,
+    amountAtomic: string,
+    tokenId: string,
+    description: string,
+    bondYocto = "10000000000000000000000",
+  ): Promise<void> {
+    if (!this.wallet || !this.accountId)
+      throw new Error("Connect a NEAR testnet wallet first.");
+    if (!tokenId.endsWith(".testnet"))
+      throw new Error("Use a testnet token contract.");
+    if (
+      !/^\d{1,39}$/.test(amountAtomic) ||
+      BigInt(amountAtomic) <= 0n ||
+      BigInt(amountAtomic) >= 2n ** 128n
+    )
+      throw new Error("Enter a positive token amount in atomic units.");
+    if (description.trim().length < 5)
+      throw new Error("Add a short explanation for the Sputnik DAO proposal.");
+    await this.verifySigner();
+    const callArgs = {
+      receiver_id: this.contractId,
+      amount: amountAtomic,
+      msg: JSON.stringify({ bucket }),
+    };
+    const result = await this.wallet.signAndSendTransaction({
+      network: "testnet",
+      signerId: this.accountId,
+      receiverId: this.sputnikDaoId,
+      actions: [
+        {
+          type: "FunctionCall",
+          params: {
+            methodName: "add_proposal",
+            args: {
+              proposal: {
+                description: description.trim(),
+                kind: {
+                  FunctionCall: {
+                    receiver_id: tokenId,
+                    actions: [
+                      {
+                        method_name: "ft_transfer_call",
+                        args: encodeBase64Json(callArgs),
+                        deposit: "1",
+                        gas: "120000000000000",
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            gas: "150000000000000",
+            deposit: bondYocto,
+          },
+        },
+      ],
+    });
+    this.verifyOutcome(result);
+  }
+  async sputnikProposeBounty(
+    description: string,
+    amountAtomic: string,
+    tokenId: string,
+    times = 3,
+    bondYocto = "10000000000000000000000",
+  ): Promise<void> {
+    if (!this.wallet || !this.accountId)
+      throw new Error("Connect a NEAR testnet wallet first.");
+    if (!tokenId.endsWith(".testnet"))
+      throw new Error("Use a testnet token contract.");
+    if (
+      !/^\d{1,39}$/.test(amountAtomic) ||
+      BigInt(amountAtomic) <= 0n ||
+      BigInt(amountAtomic) >= 2n ** 128n
+    )
+      throw new Error("Enter a positive bounty amount in atomic units.");
+    if (description.trim().length < 5)
+      throw new Error("Add a description for the Sputnik DAO bounty.");
+    await this.verifySigner();
+    const result = await this.wallet.signAndSendTransaction({
+      network: "testnet",
+      signerId: this.accountId,
+      receiverId: this.sputnikDaoId,
+      actions: [
+        {
+          type: "FunctionCall",
+          params: {
+            methodName: "add_proposal",
+            args: {
+              proposal: {
+                description: `Sputnik DAO Bounty: ${description.trim()}`,
+                kind: {
+                  AddBounty: {
+                    bounty: {
+                      description: description.trim(),
+                      token: tokenId,
+                      amount: amountAtomic,
+                      times: Math.max(1, Math.min(50, Math.round(times))),
+                      max_deadline: "604800000000000",
+                    },
+                  },
+                },
+              },
+            },
+            gas: "150000000000000",
+            deposit: bondYocto,
+          },
+        },
+      ],
+    });
+    this.verifyOutcome(result);
+  }
+  async sputnikVote(
+    proposalId: number,
+    action: SputnikVoteAction,
+  ): Promise<void> {
+    if (!this.wallet || !this.accountId)
+      throw new Error("Connect a NEAR testnet wallet first.");
+    await this.verifySigner();
+    const result = await this.wallet.signAndSendTransaction({
+      network: "testnet",
+      signerId: this.accountId,
+      receiverId: this.sputnikDaoId,
+      actions: [
+        {
+          type: "FunctionCall",
+          params: {
+            methodName: "act_proposal",
+            args: {
+              id: proposalId,
+              action,
+            },
+            gas: "250000000000000",
+            deposit: "0",
+          },
+        },
+      ],
+    });
+    this.verifyOutcome(result);
   }
   async local(): Promise<void> {
     throw new Error("Local demo actions are unavailable in NEAR testnet mode.");

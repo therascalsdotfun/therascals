@@ -42,8 +42,26 @@ import { RiskData, riskReasons } from "./security.ts";
 import { resolveTokenIdentities } from "./identity.ts";
 import { ActivityFeed } from "./activity.ts";
 import { desiredPoolSize } from "../../../../packages/shared/src/pool-controls.ts";
+import {
+  findJustHootEntry,
+  justHootTokenObservations,
+} from "../../../../packages/shared/src/justhoot-tokens.ts";
+import { tokenImageUrl } from "../../../../packages/shared/src/token-media.ts";
 import { SnapshotReader } from "./snapshot-client.ts";
 import type { SnapshotReadState, SnapshotOptions } from "./snapshot-state.ts";
+const jsonFileCache = new Map<string, { at: number; value: any }>();
+function readCachedJson(path: string, ttlMs = 10000): any {
+  const now = Date.now(),
+    hit = jsonFileCache.get(path);
+  if (hit && now - hit.at < ttlMs) return hit.value;
+  let value: any = {};
+  try {
+    value = JSON.parse(readFileSync(path, "utf8"));
+  } catch {}
+  jsonFileCache.set(path, { at: now, value });
+  return value;
+}
+
 export type DiscoveryConfiguration = {
   filters: FilterSpec;
   ticketAtomic: string;
@@ -104,7 +122,11 @@ export class MarketService {
     this.bsc.restore(this.store.records("bsc-observation:"));
     this.near.restore(this.store.records("near-observation:"));
     if (saved) {
-      this.filters = saved.filters;
+      this.filters =
+        saved.filters.minMarketCap === 50000 &&
+        saved.filters.minLiquidity === 10000
+          ? { ...DEFAULT_FILTERS }
+          : saved.filters;
       this.ticketAtomic = saved.ticketAtomic;
     }
   }
@@ -139,7 +161,7 @@ export class MarketService {
           seen: Date.now(),
         });
         this.store.putRecord("discovery:" + scope, x);
-        void this.warm(x);
+        setTimeout(() => void this.warm(x), 15).unref?.();
       },
       snapshot: (
         options: {
@@ -444,6 +466,26 @@ export class MarketService {
       throw new UserError("Fresh highest-liquidity reference pair unavailable");
     return this.gecko.chart(mint, range, dex.pool);
   }
+  observedIconUrl(mint: string): string | null {
+    const jh = findJustHootEntry(mint);
+    if (jh) return tokenImageUrl(jh.icon);
+    const dex = this.readDex(mint);
+    const fromDex = tokenImageUrl(dex?.icon);
+    if (fromDex) return fromDex;
+    const all = [
+      ...this.store.all(),
+      ...this.chainState("base").tokens,
+      ...this.chainState("bsc").tokens,
+      ...this.chainState("near").tokens,
+    ];
+    for (const token of all) {
+      if (token.mint === mint) {
+        const url = tokenImageUrl(token.dex?.icon ?? token.icon);
+        if (url) return url;
+      }
+    }
+    return null;
+  }
   async tokenRisk(mint: string) {
     return {
       ...(await this.risk.scan(mint)),
@@ -515,6 +557,9 @@ export class MarketService {
         ...this.chainState("base").tokens,
         ...this.chainState("bsc").tokens,
         ...this.chainState("near").tokens,
+        ...(configuration.filters.includeBondingCurve
+          ? justHootTokenObservations(now)
+          : []),
       ];
     // Warming only needs the eligible identity universe. Reject observations
     // using the same raw-metric filters before allocating decorated copies for
@@ -685,13 +730,28 @@ export class MarketService {
       while (this.dexWarmCursors.size > 128)
         this.dexWarmCursors.delete(this.dexWarmCursors.keys().next().value!);
       await this.dex.tokens(leading.map((t) => t.mint));
-      candidates = (await this.warmCandidates(configuration)).filter(
-        (t) =>
-          tokenChain(t) === "solana" &&
-          evaluateFilters(t, configuration.filters, Date.now()).matches &&
-          !admissionReasons(t, Date.now()).length &&
-          (!t.identity || t.identity.winnerMint === t.mint),
-      );
+      const pinned = candidates
+        .filter((t) => t.security?.status === "checked")
+        .slice(0, 20)
+        .map((t) => t.mint)
+        .filter((m) => !leading.some((l) => l.mint === m));
+      if (pinned.length) await this.dex.tokens(pinned);
+      candidates = candidates
+        .map((t) => (tokenChain(t) === "solana" ? this.decorate(t) : t))
+        .filter(
+          (t) =>
+            tokenChain(t) === "solana" &&
+            evaluateFilters(t, configuration.filters, Date.now()).matches &&
+            !admissionReasons(t, Date.now()).length &&
+            (!t.identity || t.identity.winnerMint === t.mint),
+        );
+      const hasFreshDex = (t: TokenObservation) =>
+        Boolean(
+          t.dex &&
+            !t.dex.stale &&
+            Date.now() - Date.parse(t.dex.fetchedAt) < 60000 &&
+            (t.dex.liquidity ?? 0) > 0,
+        );
       const needsScan = candidates
         .filter(
           (t) =>
@@ -701,13 +761,17 @@ export class MarketService {
         )
         .sort(
           (a, b) =>
+            Number(hasFreshDex(b)) - Number(hasFreshDex(a)) ||
             (Date.parse(a.security?.checkedAt ?? "") || 0) -
-            (Date.parse(b.security?.checkedAt ?? "") || 0),
+              (Date.parse(b.security?.checkedAt ?? "") || 0),
         );
-      if (needsScan[0]) await this.risk.scan(needsScan[0].mint);
+      for (const target of needsScan.slice(0, 3)) {
+        await this.risk.scan(target.mint);
+      }
       const now = Date.now(),
         ticket = configuration.ticketAtomic;
-      const token = (await this.warmCandidates(configuration))
+      const routeTargets = candidates
+        .map((t) => (tokenChain(t) === "solana" ? this.decorate(t) : t))
         .filter(
           (t) =>
             tokenChain(t) === "solana" &&
@@ -728,12 +792,13 @@ export class MarketService {
           (a, b) =>
             (this.routes.get(a.mint + ":" + ticket)?.checkedAt ?? 0) -
             (this.routes.get(b.mint + ":" + ticket)?.checkedAt ?? 0),
-        )[0];
-      if (!token) return;
-      this.cacheRoute(
-        token.mint + ":" + ticket,
-        await checkRoutePair(token.mint, ticket, (url) => this.get(url, 2)),
-      );
+        );
+      for (const token of routeTargets.slice(0, 2)) {
+        this.cacheRoute(
+          token.mint + ":" + ticket,
+          await checkRoutePair(token.mint, ticket, (url) => this.get(url, 2)),
+        );
+      }
     } catch {
       /* Missing provider data fails closed in every snapshot and buy check. */
     } finally {
@@ -753,6 +818,9 @@ export class MarketService {
         ...this.chainState("base").tokens,
         ...this.chainState("bsc").tokens,
         ...this.chainState("near").tokens,
+        ...(configuration.filters.includeBondingCurve
+          ? justHootTokenObservations(now)
+          : []),
       ],
       all = this.candidateTokens(
         configuration,
@@ -798,32 +866,36 @@ export class MarketService {
       )
       .map((r) => r.token);
     const pool = prioritizePicks(
-      [...solana, ...base].sort(
-        (a, b) =>
+      [...solana, ...base].sort((a, b) => {
+        const ra = findJustHootEntry(a.mint)?.rank,
+          rb = findJustHootEntry(b.mint)?.rank;
+        if (ra !== undefined || rb !== undefined)
+          return (ra ?? 999) - (rb ?? 999);
+        return (
           Date.parse(b.firstPoolCreatedAt ?? "") -
-          Date.parse(a.firstPoolCreatedAt ?? ""),
-      ),
+          Date.parse(a.firstPoolCreatedAt ?? "")
+        );
+      }),
       configuration.filters,
     ).slice(0, desiredPoolSize(configuration.filters));
-    let setup: any = {};
-    try {
-      setup = JSON.parse(readFileSync(".data/setup-status.json", "utf8"));
-    } catch {}
-    let mpc: any = {};
-    try {
-      mpc = JSON.parse(readFileSync("docs/evidence/mpc-transfer.json", "utf8"));
-    } catch {}
+    const setup = readCachedJson(".data/setup-status.json"),
+      mpc = readCachedJson("docs/evidence/mpc-transfer.json");
     const offset = options.offset ?? 0,
       limit = options.limit ?? 200,
       chainRows = rows
         .filter((r) =>
           selectedChains(configuration.filters).includes(tokenChain(r.token)),
         )
-        .sort(
-          (a, b) =>
+        .sort((a, b) => {
+          const ra = findJustHootEntry(a.token.mint)?.rank,
+            rb = findJustHootEntry(b.token.mint)?.rank;
+          if (ra !== undefined || rb !== undefined)
+            return (ra ?? 999) - (rb ?? 999);
+          return (
             Date.parse(b.token.sourceUpdatedAt ?? "") -
-            Date.parse(a.token.sourceUpdatedAt ?? ""),
-        ),
+            Date.parse(a.token.sourceUpdatedAt ?? "")
+          );
+        }),
       listed = options.matchingOnly
         ? chainRows.filter(
             (r) =>

@@ -1870,6 +1870,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rascals-test-token"
+version = "0.1.0"
+dependencies = [
+ "near-contract-standards",
+ "near-sdk",
+]
+
+[[package]]
 name = "rayon"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

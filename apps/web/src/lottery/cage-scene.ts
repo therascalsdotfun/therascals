@@ -423,7 +423,11 @@ export function createCageScene(
       paintBallSurface(surface, color, tokenTicker(token.symbol), image);
       texture.needsUpdate = true;
     }
-    const url = tokenImageUrl(token.dex?.icon ?? token.icon);
+    const rawUrl = tokenImageUrl(token.dex?.icon ?? token.icon);
+    const url =
+      rawUrl && /^https?:\/\//i.test(rawUrl)
+        ? `/api/token-art/${encodeURIComponent(token.mint)}`
+        : rawUrl;
     if (url) {
       const img = new Image();
       img.crossOrigin = "anonymous";

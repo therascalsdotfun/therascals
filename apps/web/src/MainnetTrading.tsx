@@ -5,6 +5,7 @@ import { IntentsQuote } from "./IntentsQuote.tsx";
 import { IntentsSwap } from "./IntentsSwap.tsx";
 import { JupiterTrade } from "./JupiterTrade.tsx";
 import { EvmTrade } from "./EvmTrade.tsx";
+import { JustHootTrade } from "./JustHootDraw.tsx";
 import { tokenChain } from "../../../packages/shared/src/token-selection.ts";
 import "./mainnet.css";
 export function MainnetTrading({
@@ -52,7 +53,9 @@ export function MainnetTrading({
         </button>
       </div>
       {route === "jupiter" ? (
-        token && ["base", "bsc"].includes(tokenChain(token)) ? (
+        token && tokenChain(token) === "near" ? (
+          <JustHootTrade token={token} amount={amount} />
+        ) : token && ["base", "bsc"].includes(tokenChain(token)) ? (
           <EvmTrade token={token} rollId={rollId} amount={amount} onBusy={pending} />
         ) : !token ? (
           <div className="mainnet-connect">

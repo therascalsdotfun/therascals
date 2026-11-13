@@ -470,19 +470,27 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.refresh-btn {
+.refresh-btn,
+button.refresh-btn.secondary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 4px 8px;
+  width: auto;
+  flex: 0 0 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 5px 10px;
   font-size: 12px;
   background: var(--paper);
   border: 1px solid #c9b8df;
   border-radius: 6px;
   color: var(--ink);
+  box-shadow: none;
   cursor: pointer;
 }
-.refresh-btn:hover:not(:disabled) {
+.refresh-btn:hover:not(:disabled),
+button.refresh-btn.secondary:hover:not(:disabled) {
   background: #ede6f7;
 }
 .presets-empty-state,

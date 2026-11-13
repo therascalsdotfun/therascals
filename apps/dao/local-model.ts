@@ -485,15 +485,18 @@ export class LocalDao {
         Math.floor((total * j.policy.max_score) / 100),
         Number(amount(j.max_reward) / amount(j.policy.tokens_per_point)),
       );
+      const rationale =
+        typeof args.rationale === "string" && args.rationale.trim()
+          ? args.rationale.slice(0, 1024)
+          : "Local program verdict (manual assessment): " +
+            JSON.stringify(assessment) +
+            ". Weighted 8/5/5/2 for impact/security/verification/maintenance. Simulation only: no GitHub merge or TEE proof asserted.";
       return this.perform(
         "submit_verdict",
         {
           job_id: j.id,
           score,
-          rationale:
-            "Local program verdict (manual assessment): " +
-            JSON.stringify(assessment) +
-            ". Weighted 8/5/5/2 for impact/security/verification/maintenance. Simulation only: no GitHub merge or TEE proof asserted.",
+          rationale,
           evidence_hash: createHash("sha256")
             .update(
               JSON.stringify({
@@ -501,7 +504,7 @@ export class LocalDao {
                 assessment,
                 weights,
                 rubric_hash: j.agent.rubric_hash,
-                source: "local-manual-program",
+                source: args.source ?? "local-manual-program",
               }),
             )
             .digest("hex"),

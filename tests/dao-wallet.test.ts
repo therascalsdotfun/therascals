@@ -147,3 +147,39 @@ it("does not report refunded token funding as an accepted treasury deposit", asy
     c.fundToken("rewards", "1000000", "token.testnet"),
   ).rejects.toThrow(/refund|accepted|deposit/i);
 });
+
+it("loads Sputnik DAO v2 state and sends wallet-approved add_proposal and act_proposal calls to testnet Sputnik DAO", async () => {
+  expect(() => new NearDaoClient("dao.testnet", "sputnik.near")).toThrow(
+    "testnet",
+  );
+  const c = new NearDaoClient("dao.testnet", "therascals.sputnikv2.testnet");
+  await c.connect();
+
+  await c.sputnikProposeGrant(
+    "rewards",
+    "250000000",
+    "token.testnet",
+    "Fund Contributor DAO rewards pool via Sputnik DAO grant",
+  );
+  expect(m.send.mock.calls[0][0].receiverId).toBe(
+    "therascals.sputnikv2.testnet",
+  );
+  expect(m.send.mock.calls[0][0].actions[0].params.methodName).toBe(
+    "add_proposal",
+  );
+  expect(m.send.mock.calls[0][0].actions[0].params.deposit).toBe(
+    "10000000000000000000000",
+  );
+
+  await c.sputnikVote(2, "VoteApprove");
+  expect(m.send.mock.calls[1][0].receiverId).toBe(
+    "therascals.sputnikv2.testnet",
+  );
+  expect(m.send.mock.calls[1][0].actions[0].params.methodName).toBe(
+    "act_proposal",
+  );
+  expect(m.send.mock.calls[1][0].actions[0].params.args).toEqual({
+    id: 2,
+    action: "VoteApprove",
+  });
+});

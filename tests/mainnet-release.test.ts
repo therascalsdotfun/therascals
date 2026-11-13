@@ -40,6 +40,7 @@ it("runs public discovery and executable route guards without sponsored credenti
       defaultMode: "mainnet",
       sponsored: false,
       mainnet: { intentsExecutable: true },
+      perps: { enabled: false, testnetEnabled: false },
     });
     expect((await app.inject("/api/intents/operations")).statusCode).toBe(401);
     expect(
@@ -64,6 +65,7 @@ it("runs public discovery and executable route guards without sponsored credenti
     expect((await app.inject("/api/execution")).statusCode).toBe(404);
     for (const url of [
       "/api/perps/catalog",
+      "/api/perps/testnet/catalog",
       "/api/rewards/leaderboard?lane=practice",
       "/api/portfolio/solana-devnet/11111111111111111111111111111111",
     ]) {

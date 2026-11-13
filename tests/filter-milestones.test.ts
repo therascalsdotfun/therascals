@@ -15,14 +15,14 @@ it("maps each named market-cap stop exactly, including the exclusive hard ceilin
     MARKET_CAP_MILESTONES.map((n) => milestoneLabel("minMarketCap", n)),
   ).toEqual([
     "0",
+    "2k",
+    "5k",
     "10k",
-    "20k",
+    "25k",
     "50k",
     "100k",
-    "200k",
-    "500k",
+    "250k",
     "1M",
-    "2M",
     "5M",
     "10M+",
     "<100M",
@@ -32,6 +32,7 @@ it("interpolates custom values in order without escaping the selected domain", (
   for (const key of [
     "poolSize",
     "minAgeMinutes",
+    "maxAgeMinutes",
     "maxMarketCap",
     "minLiquidity",
     "minHolders",
@@ -56,5 +57,10 @@ it("interpolates custom values in order without escaping the selected domain", (
     expect(milestoneValue(-10, stops)).toBe(stops[0]);
     expect(milestoneValue(9999, stops)).toBe(stops.at(-1));
   }
-  expect(milestoneValue(350, MARKET_CAP_MILESTONES)).toBe(75000);
+  expect(milestoneValue(350, MARKET_CAP_MILESTONES)).toBe(17500);
+  expect(
+    filterMilestones("maxAgeMinutes").map((n) =>
+      milestoneLabel("maxAgeMinutes", n),
+    ),
+  ).toEqual(["0m", "15m", "1h", "6h", "1d", "7d", "1mo", "3mo", "Any"]);
 });

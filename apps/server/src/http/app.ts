@@ -9,6 +9,8 @@ import {
   validFilterRanges,
 } from "../../../../packages/shared/src/filter-schema.ts";
 import { discoveryPreset } from "../../../../packages/shared/src/discovery-presets.ts";
+import { findJustHootEntry } from "../../../../packages/shared/src/justhoot-tokens.ts";
+import { tokenImageUrl } from "../../../../packages/shared/src/token-media.ts";
 import { validMint } from "../market/gecko.ts";
 import { PortfolioPositions } from "../portfolio/positions.ts";
 import { PortfolioService } from "../portfolio/service.ts";
@@ -20,7 +22,7 @@ import { VisitorProfiles } from "../beta/visitors.ts";
 import { subjectFor } from "../beta/access.ts";
 import { clientMessage } from "../client-message.ts";
 import { IntentsError, IntentsService } from "../intents/service.ts";
-import { registerPerps } from "../perps/http.ts";
+import { registerPerps, registerPerpsTestnet } from "../perps/http.ts";
 import type { PerpsService } from "../perps/execution.ts";
 import { registerRewards } from "../rewards/http.ts";
 import { registerCommunityPresets } from "../presets/http.ts";
@@ -286,6 +288,9 @@ export async function createApp(
       ? new IntentsFunding(options.store, swaps)
       : undefined);
   registerIntentsExecution(app, swaps, funding, identity, auth, undefined, presets);
+  const perpsTestnetEnabled =
+    runtime.mode !== "public" || process.env.JACKPOT_PERPS_TESTNET === "1";
+  if (perpsTestnetEnabled) registerPerpsTestnet(app, identity, auth);
   if (releasePerps) registerPerps(app, releasePerps, identity, auth);
   app.get("/api/runtime", () => ({
     mode: runtime.mode,
@@ -305,8 +310,9 @@ export async function createApp(
           enabled: true,
           network: releasePerps.network,
           agentTrading: true,
+          testnetEnabled: perpsTestnetEnabled,
         }
-      : { enabled: false },
+      : { enabled: false, testnetEnabled: perpsTestnetEnabled },
   }));
   app.post("/api/mainnet/recheck", async (req, reply) => {
     rate(req, "mainnet-check", 6);
@@ -701,6 +707,78 @@ export async function createApp(
       ? options.store.priceTrend(mint)
       : reply.code(503).send({ error: "Price history unavailable" });
   });
+  const tokenArtCache = new Map<
+    string,
+    { type: string; body: Buffer; expiresAt: number }
+  >();
+  app.get("/api/token-art/:mint", async (req, reply) => {
+    if (isPublic) rate(req, "token-art", 120);
+    const mint = (req.params as any).mint;
+    if (typeof mint !== "string" || !/^[A-Za-z0-9._:-]{3,80}$/.test(mint)) {
+      return reply.code(400).send({ error: "Invalid token identifier" });
+    }
+    const rawIcon =
+      typeof service.observedIconUrl === "function"
+        ? service.observedIconUrl(mint)
+        : null;
+    const safeUrl = tokenImageUrl(rawIcon);
+    if (!safeUrl || !safeUrl.startsWith("https://")) {
+      return reply.code(404).send({ error: "Token icon unavailable." });
+    }
+    const now = Date.now();
+    const cached = tokenArtCache.get(safeUrl);
+    if (cached && cached.expiresAt > now) {
+      return reply
+        .header("content-type", cached.type)
+        .header("cache-control", "public, max-age=900")
+        .header("cross-origin-resource-policy", "cross-origin")
+        .send(cached.body);
+    }
+    try {
+      const upstream = await fetch(safeUrl, {
+        redirect: "error",
+        signal: AbortSignal.timeout(4000),
+      });
+      const resolvedUrl = upstream.url || safeUrl;
+      if (
+        !upstream.ok ||
+        !tokenImageUrl(resolvedUrl)?.startsWith("https://")
+      ) {
+        return reply.code(404).send({ error: "Token icon unavailable." });
+      }
+      const typeHeader = (upstream.headers.get("content-type") ?? "")
+        .split(";")[0]
+        .trim()
+        .toLowerCase();
+      if (!/^image\/(?:png|jpeg|jpg|webp|gif|avif)$/.test(typeHeader)) {
+        return reply.code(404).send({ error: "Token icon unavailable." });
+      }
+      const len = Number(upstream.headers.get("content-length") ?? "0");
+      if (Number.isFinite(len) && len > 512 * 1024) {
+        return reply.code(404).send({ error: "Token icon unavailable." });
+      }
+      const body = Buffer.from(await upstream.arrayBuffer());
+      if (body.byteLength === 0 || body.byteLength > 512 * 1024) {
+        return reply.code(404).send({ error: "Token icon unavailable." });
+      }
+      if (tokenArtCache.size >= 200) {
+        const oldest = tokenArtCache.keys().next().value;
+        if (oldest !== undefined) tokenArtCache.delete(oldest);
+      }
+      tokenArtCache.set(safeUrl, {
+        type: typeHeader,
+        body,
+        expiresAt: now + 15 * 60_000,
+      });
+      return reply
+        .header("content-type", typeHeader)
+        .header("cache-control", "public, max-age=900")
+        .header("cross-origin-resource-policy", "cross-origin")
+        .send(body);
+    } catch {
+      return reply.code(404).send({ error: "Token icon unavailable." });
+    }
+  });
   app.get("/api/charts/:mint", async (req, reply) => {
     if (isPublic) rate(req, "chart", 20);
     const mint = (req.params as any).mint;
@@ -708,7 +786,27 @@ export async function createApp(
       .object({ range: z.enum(["1m", "5m", "1h"]).default("1m") })
       .strict()
       .safeParse(req.query);
-    if (!validMint(mint) || !q.success)
+    if (!q.success)
+      return reply.code(400).send({ error: "Invalid mint or chart range" });
+    const jh = findJustHootEntry(mint);
+    if (jh) {
+      return {
+        mint: jh.mint,
+        pool: jh.poolId,
+        chain: "near",
+        currency: "USD",
+        source: "JustHoot",
+        range: q.data.range,
+        fetchedAt: new Date().toISOString(),
+        stale: false,
+        symbol: jh.symbol,
+        name: jh.name,
+        priceUsd: jh.priceUsd,
+        candles: [],
+        sparkline: jh.sparkline,
+      };
+    }
+    if (!validMint(mint))
       return reply.code(400).send({ error: "Invalid mint or chart range" });
     try {
       return await service.sourceChart(mint, q.data.range);
@@ -870,11 +968,27 @@ export async function createApp(
         throw e;
       }
     }
-    discovery(req, reply).configure({
+    const target = discovery(req, reply);
+    target.configure({
       filters: f,
       ticketAtomic: String(Math.round(Number(x.ticket) * 1e6)),
     });
-    return { ok: true };
+    let snapshot: any = null;
+    try {
+      snapshot = target.snapshotAsync
+        ? await target.snapshotAsync({ matchingOnly: true })
+        : typeof target.snapshot === "function"
+          ? target.snapshot({ matchingOnly: true })
+          : null;
+    } catch {}
+    return snapshot && typeof snapshot === "object" && "pool" in snapshot
+      ? {
+          ok: true,
+          snapshot: isPublic
+            ? { ...snapshot, viewer: { identity: identity(req) } }
+            : snapshot,
+        }
+      : { ok: true };
   });
   return app;
 }

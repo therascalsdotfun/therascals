@@ -25,12 +25,12 @@ export function discoveryPreset(
   const base: FilterSpec = {
     poolSize: 8,
     ageBasis: "first_pool",
-    minAgeMinutes: 15,
+    minAgeMinutes: 0,
     maxAgeMinutes: 1440,
-    minMarketCap: 50000,
+    minMarketCap: 5000,
     maxMarketCap: 5000000,
-    minLiquidity: 10000,
-    minVolume5m: 1000,
+    minLiquidity: 2000,
+    minVolume5m: 250,
     minBuys5m: 0,
     minSells5m: 0,
     minHolders: 0,
@@ -42,16 +42,19 @@ export function discoveryPreset(
     ? {
         ...base,
         minAgeMinutes: 0,
-        minMarketCap: 5000,
-        minLiquidity: 2000,
-        minVolume5m: 250,
+        maxAgeMinutes: 10080,
+        minMarketCap: 2000,
+        minLiquidity: 1000,
+        minVolume5m: 100,
       }
     : id === "tight"
       ? {
           ...base,
-          minMarketCap: 100000,
-          minLiquidity: 25000,
-          minVolume5m: 5000,
+          minAgeMinutes: 15,
+          maxAgeMinutes: 1440,
+          minMarketCap: 25000,
+          minLiquidity: 10000,
+          minVolume5m: 1000,
         }
       : base;
 }
@@ -77,7 +80,14 @@ export function presetFor(filters: FilterSpec): DiscoveryPreset | "custom" {
       return Object.keys(candidate)
         .filter(
           (k) =>
-            !["memeTypes", "poolSize", "chains", "tokenSelection"].includes(k),
+            ![
+              "memeTypes",
+              "poolSize",
+              "minPoolSize",
+              "maxPoolSize",
+              "chains",
+              "tokenSelection",
+            ].includes(k),
         )
         .every(
           (k) =>

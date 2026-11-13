@@ -104,6 +104,17 @@ import { AdvancedTrading } from "./AdvancedTrading.tsx";
 import { presetFor } from "../../../packages/shared/src/discovery-presets.ts";
 import { FilterSettings } from "./FilterSettings.tsx";
 import {
+  JustHootChartView,
+  JustHootDrawControl,
+  JustHootLeaderboardTable,
+} from "./JustHootDraw.tsx";
+import {
+  JUSTHOOT_ALL_LEADERBOARD_KEYS,
+  JUSTHOOT_DEFAULT_TOP3_KEYS,
+  findJustHootEntry,
+  justHootTokenObservations,
+} from "../../../packages/shared/src/justhoot-tokens.ts";
+import {
   inferMemeTypes,
   MEME_TYPES,
 } from "../../../packages/shared/src/meme-types.ts";
@@ -123,22 +134,67 @@ const compact = (v: number | null) =>
 const dollars = (v: number | null) =>
   v === null ? "Unknown" : "$" + compact(v);
 const short = (s: string) => s.slice(0, 5) + "…" + s.slice(-5);
+const walletAddressLabel = (address: string) =>
+  address.length <= 18 ? address : short(address);
+const walletChainLabel = (wallet: { kind: string; chainId?: string }) =>
+  wallet.kind === "near"
+    ? "NEAR"
+    : wallet.kind === "phantom"
+      ? "Solana"
+      : ({ "0x1": "Ethereum", "0x2105": "Base", "0x38": "BNB" } as const)[
+          (wallet.chainId?.toLowerCase() ?? "") as "0x1"
+        ] ?? "EVM";
 const age = (s: string | null) =>
   !s
     ? "Unknown"
     : Math.max(0, Math.floor((Date.now() - Date.parse(s)) / 60000)) + "m";
 const readable = (s: string) => s.replaceAll("_", " ");
+const SAVED_DISCOVERY_KEY = "rascals-saved-discovery-v1";
+type SavedDiscoveryState = {
+  ticket: string;
+  preset: string;
+  filters?: FilterSpec;
+  presetId?: string | null;
+};
+function readSavedDiscovery(): SavedDiscoveryState | null {
+  try {
+    const raw = localStorage.getItem(SAVED_DISCOVERY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      ticket: typeof parsed.ticket === "string" ? parsed.ticket : "5",
+      preset: typeof parsed.preset === "string" ? parsed.preset : "strict",
+      filters:
+        parsed.filters && typeof parsed.filters === "object"
+          ? (parsed.filters as FilterSpec)
+          : undefined,
+      presetId:
+        typeof parsed.presetId === "string" ? parsed.presetId : null,
+    };
+  } catch {
+    return null;
+  }
+}
+function writeSavedDiscovery(state: SavedDiscoveryState) {
+  try {
+    localStorage.setItem(SAVED_DISCOVERY_KEY, JSON.stringify(state));
+  } catch {}
+}
 export default function App() {
   const {
     accounts,
     identity: walletIdentity,
     pendingInfo: walletPending,
+    verify: verifyWallet,
     cancel: cancelWalletRequest,
     error: walletError,
   } = useWallets();
+  const connectedWallet = Object.values(accounts)[0];
   const [perpsAvailability, setPerpsAvailability] = useState<
     "loading" | "mainnet" | "unavailable"
   >("loading");
+  const [perpsTestnetEnabled, setPerpsTestnetEnabled] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/runtime", {
@@ -149,19 +205,32 @@ export default function App() {
         return r.json();
       })
       .then((r) => {
-        if (!controller.signal.aborted)
+        if (!controller.signal.aborted) {
           setPerpsAvailability(
             r.perps?.enabled === true && r.perps.network === "mainnet"
               ? "mainnet"
               : "unavailable",
           );
+          setPerpsTestnetEnabled(Boolean(r.perps?.testnetEnabled));
+        }
       })
       .catch(() => {
-        if (!controller.signal.aborted) setPerpsAvailability("unavailable");
+        if (!controller.signal.aborted) {
+          setPerpsAvailability("unavailable");
+          setPerpsTestnetEnabled(false);
+        }
       });
     return () => controller.abort();
   }, []);
-  const perps = usePerpsGame(perpsAvailability === "mainnet", "mainnet");
+  const perps = usePerpsGame(
+    perpsAvailability === "mainnet",
+    perpsAvailability === "mainnet"
+      ? "mainnet"
+      : perpsTestnetEnabled
+        ? "testnet"
+        : "mainnet",
+    perpsTestnetEnabled,
+  );
   const walletScope = JSON.stringify({
     accounts,
     identity: walletIdentity
@@ -215,8 +284,10 @@ export default function App() {
     ),
     [dialog, setDialog] = useState(false),
     [setup] = useState(false),
-    [ticket, setTicket] = useState("5"),
-    [preset, setPreset] = useState("strict"),
+    [ticket, setTicket] = useState(() => readSavedDiscovery()?.ticket ?? "5"),
+    [preset, setPreset] = useState(
+      () => readSavedDiscovery()?.preset ?? "strict",
+    ),
     [draft, setDraft] = useState<FilterSpec | null>(null),
     [activePresetId, setActivePresetId] = useState<string | null>(null),
     [activePresetTitle, setActivePresetTitle] = useState<string | null>(null),
@@ -480,7 +551,6 @@ export default function App() {
   }
   useEffect(() => {
     mounted.current = true;
-    void load();
     const refreshVisible = () => {
       if (document.visibilityState === "visible") void load(true);
     };
@@ -499,14 +569,22 @@ export default function App() {
     lotteryPending.current = null;
     setReleaseStatus("");
     setExecution(null);
-    setData(null);
-    setSelected(null);
-    setFrozen([]);
-    setDegenAmount(null);
-    degenLandingComplete.current = false;
-    setPhase("idle");
-    setTicket("5");
-    setPreset("strict");
+    const keepReveal = phase === "reveal" && !!selected;
+    if (!keepReveal) {
+      setSelected(null);
+      setFrozen([]);
+      setDegenAmount(null);
+      degenLandingComplete.current = false;
+      setPhase("idle");
+      stageOp.current = "";
+      stageSource.current = "";
+      stageKindRef.current = "preview";
+      setStageKind("preview");
+      celebrateNextReveal.current = false;
+    }
+    const saved = readSavedDiscovery();
+    setTicket(saved?.ticket ?? "5");
+    setPreset(saved?.preset ?? "strict");
     setDraft(null);
     setDialog(false);
     setChartToken(null);
@@ -514,13 +592,19 @@ export default function App() {
     setExecutionReadError("");
     setActing(false);
     setPendingRequest(null);
-    stageOp.current = "";
-    stageSource.current = "";
-    stageKindRef.current = "preview";
-    setStageKind("preview");
-    celebrateNextReveal.current = false;
     ticketDirty.current = false;
-    void load();
+    if (saved?.filters) {
+      void configure(
+        saved.ticket ?? "5",
+        saved.preset ?? "strict",
+        saved.filters,
+        rollStyle,
+        saved.presetId ?? null,
+        keepReveal,
+      );
+    } else {
+      void load();
+    }
   }, [walletScope]);
   useEffect(() => {
     if (dialog) {
@@ -546,6 +630,7 @@ export default function App() {
     filters?: FilterSpec,
     style: RollStyle = rollStyle,
     presetId?: string | null,
+    preserveStage = false,
   ) {
     if (!filterChangeAllowed(phase)) {
       setActionError(
@@ -554,6 +639,39 @@ export default function App() {
       return;
     }
     const scope = scopeRef.current;
+    marketFetch.current?.abort();
+    marketFetch.current = null;
+    marketRead.current++;
+    const appliedFilters = filters
+      ? chainsForRoll(filters, style)
+      : data?.filters;
+    if (appliedFilters && data) {
+      const optimisticJustHoot =
+        appliedFilters.includeBondingCurve &&
+        appliedFilters.tokenSelection?.manualOnly &&
+        appliedFilters.tokenSelection.included?.length
+          ? justHootTokenObservations(Date.now()).filter((t) =>
+              appliedFilters.tokenSelection!.included.includes(
+                `near:${t.mint}`,
+              ),
+            )
+          : null;
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              filters: appliedFilters,
+              ticketAtomic: String(Math.round(Number(nextTicket) * 1e6)),
+              ...(optimisticJustHoot && optimisticJustHoot.length >= 2
+                ? {
+                    pool: optimisticJustHoot,
+                    eligible: optimisticJustHoot.length,
+                  }
+                : {}),
+            }
+          : prev,
+      );
+    }
     setPendingRequest("discovery");
     setActionError("");
     try {
@@ -563,7 +681,7 @@ export default function App() {
         body: JSON.stringify({
           ticket: nextTicket,
           preset: nextPreset === "custom" ? "broad" : nextPreset,
-          ...(filters ? { filters: chainsForRoll(filters, style) } : {}),
+          ...(appliedFilters ? { filters: appliedFilters } : {}),
           ...(presetId ? { presetId } : {}),
         }),
       });
@@ -572,13 +690,40 @@ export default function App() {
         const errData = await r.json().catch(() => null);
         throw new Error(errData?.error || "Check your amount and filter ranges");
       }
-      await load();
+      const payload = await r.json().catch(() => null);
+      if (
+        payload?.snapshot &&
+        typeof payload.snapshot === "object" &&
+        Array.isArray(payload.snapshot.pool)
+      ) {
+        if (
+          mounted.current &&
+          scope === scopeRef.current &&
+          responseMatchesWallet(payload.snapshot, identityRef.current)
+        ) {
+          (marketFetch.current as AbortController | null)?.abort();
+          marketFetch.current = null;
+          marketRead.current++;
+          setData(payload.snapshot);
+          setError("");
+        }
+      } else {
+        await load();
+      }
       if (scope !== scopeRef.current) return;
+      writeSavedDiscovery({
+        ticket: nextTicket,
+        preset: nextPreset,
+        ...(appliedFilters ? { filters: appliedFilters } : {}),
+        presetId: presetId ?? null,
+      });
       setTicket(nextTicket);
       ticketDirty.current = false;
       setPreset(nextPreset);
-      setSelected(null);
-      setPhase("idle");
+      if (!preserveStage) {
+        setSelected(null);
+        setPhase("idle");
+      }
       setDialog(false);
       return true;
     } catch (e) {
@@ -750,9 +895,13 @@ export default function App() {
     await revealRoll(id);
   }
   const accessiblePool = (data?.pool ?? []).filter((t) =>
-    Object.keys(accounts).length === 0
-      ? tokenChain(t) === "solana"
-      : accessibleToken(t, accounts, intentsCatalog),
+    t.launchpad === "justhoot" ||
+    (data?.filters.includeBondingCurve && tokenChain(t) === "near") ||
+    (!accounts.phantom && !accounts.metamask && tokenChain(t) === "solana")
+      ? true
+      : Object.keys(accounts).length === 0
+        ? tokenChain(t) === "solana"
+        : accessibleToken(t, accounts, intentsCatalog),
   );
   const previewOnlyPool = !!data?.filters.chains?.some((c) => c !== "solana");
   const [sourceWaitExpired, setSourceWaitExpired] = useState(false);
@@ -762,7 +911,11 @@ export default function App() {
     chainMismatch = !!(data && accessiblePool.length !== data.pool.length),
     pool =
       phase === "idle" && pendingRequest !== "draw" ? accessiblePool : frozen,
-    sourcesPending = discoveryLoading(data, pendingRequest, !!error),
+    sourcesPending = discoveryLoading(
+      data,
+      data && data.pool.length >= 2 ? null : pendingRequest,
+      !!error,
+    ),
     readiness = error
       ? {
           title: "Market data unavailable",
@@ -774,7 +927,18 @@ export default function App() {
             detail:
               "Retry live data or adjust your filters while sources recover.",
           }
-        : drawReadiness(data),
+        : data && data.pool.length >= 2 && accessiblePool.length < 2
+          ? {
+              title: "Connect a wallet for these coins",
+              detail: `${data.pool.length - accessiblePool.length} screened ${[
+                ...new Set(
+                  data.pool
+                    .filter((t) => !accessiblePool.includes(t))
+                    .map((t) => chainName(tokenChain(t))),
+                ),
+              ].join(" + ")} coins need their chain wallet or an exact Intents asset`,
+            }
+          : drawReadiness(data),
     tokensLoading = sourcesPending && !sourceWaitExpired,
     live = !error && data?.health.state === "live",
     ticketValid =
@@ -865,7 +1029,7 @@ export default function App() {
                 aria-current={tab === "dao" ? "page" : undefined}
                 onClick={() => setTab("dao")}
               >
-                <Code2 size={17} /> DAO
+                <Code2 size={17} /> DAO · Sputnik
               </button>
             }
           </nav>
@@ -876,11 +1040,9 @@ export default function App() {
               <button
                 className="connect-wallet"
                 aria-label={
-                  walletIdentity
-                    ? `Wallet ${walletIdentity.address} · verified`
-                    : Object.keys(accounts).length
-                      ? "Wallet connected · verify or manage wallet"
-                      : "Connect wallet"
+                  connectedWallet
+                    ? `${walletChainLabel(connectedWallet)} wallet ${connectedWallet.address}${walletIdentity ? " · verified" : " · verify or manage wallet"}`
+                    : "Connect wallet"
                 }
                 title={walletIdentity?.address ?? "Connect or manage wallet"}
                 onClick={() => setWalletDialog(true)}
@@ -894,11 +1056,9 @@ export default function App() {
                   <Wallet size={19} />
                 )}
                 <span className="wallet-button-label">
-                  {walletIdentity
-                    ? `${short(walletIdentity.address)} · verified`
-                    : Object.keys(accounts).length
-                      ? "Wallet connected"
-                      : "Connect wallet"}
+                  {connectedWallet
+                    ? `${walletAddressLabel(connectedWallet.address)} · ${walletChainLabel(connectedWallet)}${walletIdentity ? " ✓" : " · Verify"}`
+                    : "Connect wallet"}
                 </span>
                 <span>↗</span>
               </button>
@@ -952,6 +1112,40 @@ export default function App() {
                   </li>
                 </ol>
               </details>
+            </div>
+          )}
+          {connectedWallet && !walletIdentity && !walletPending && (
+            <div
+              className="wallet-verify-banner"
+              role="status"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "12px",
+                padding: "10px 14px",
+                marginBottom: "14px",
+                borderRadius: "10px",
+                background: "#fff4ec",
+                border: "1.5px solid #d4551f",
+                color: "#7a2e0e",
+                fontSize: "13px",
+              }}
+            >
+              <span>
+                <b>Mandatory wallet verification required:</b> Verify{" "}
+                <code>{walletAddressLabel(connectedWallet.address)}</code> with
+                a free sign-in message so your wallet can roll, swap, and trade.
+              </span>
+              <button
+                type="button"
+                className="primary"
+                style={{ padding: "6px 12px", fontSize: "12px" }}
+                onClick={() => void verifyWallet(connectedWallet.kind)}
+              >
+                Verify Wallet Now
+              </button>
             </div>
           )}
           {walletPending && !walletDialog && (
@@ -1102,6 +1296,22 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+                <JustHootDrawControl
+                  filters={data?.filters}
+                  disabled={
+                    phase !== "idle" ||
+                    !!execution?.busy ||
+                    acting ||
+                    configBusy
+                  }
+                  onApplyFilters={(nextFilters) =>
+                    void configure(
+                      ticket,
+                      nextFilters.includeBondingCurve ? "broad" : preset,
+                      nextFilters,
+                    )
+                  }
+                />
                 {data && (
                   <div
                     className="stage-chain-selection"
@@ -1218,10 +1428,11 @@ export default function App() {
                       <strong>{readiness.title}</strong>
                       <button
                         className="text-link"
+                        disabled={configBusy}
                         onClick={() => {
                           setSourceRetryKey((n) => n + 1);
                           setSourceWaitExpired(false);
-                          void load();
+                          void configure(ticket, preset, data?.filters);
                         }}
                       >
                         Retry live data ↻
@@ -1487,6 +1698,38 @@ export default function App() {
               className="dao-integrated"
               aria-label="Rascals Contributor DAO"
             >
+              <div className="dao-sputnik-strip" role="note">
+                <div className="dao-sputnik-strip-main">
+                  <span className="dao-sputnik-pill">
+                    SPUTNIK DAO v2 INTEGRATED
+                  </span>
+                  <span className="dao-testnet-pill">
+                    <i /> WORKING ON NEAR TESTNET
+                  </span>
+                  <span className="dao-sputnik-text">
+                    Sputnik DAO v2 council multisig &amp; shared treasury (
+                    <code>therascals.sputnikv2.testnet</code>) governing
+                    programmable Contributor DAO rewards (
+                    <code>v2.rascals-dao-1104.testnet</code>)
+                  </span>
+                </div>
+                <div className="dao-sputnik-strip-links">
+                  <a
+                    href="https://testnet.nearblocks.io/address/therascals.sputnikv2.testnet"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    therascals.sputnikv2.testnet ↗
+                  </a>
+                  <a
+                    href="https://testnet.nearblocks.io/address/v2.rascals-dao-1104.testnet"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    v2.rascals-dao-1104.testnet ↗
+                  </a>
+                </div>
+              </div>
               <iframe
                 title="Rascals Contributor DAO"
                 src={
@@ -1533,7 +1776,6 @@ export default function App() {
                 </button>
               </div>
               <MarketTable
-                key={walletScope}
                 data={data}
                 onChart={openChart}
                 pointsLane={"mainnet"}
@@ -1542,7 +1784,7 @@ export default function App() {
           )}
           {tab === "draw" && phase === "reveal" && selected && (
             <TradeChartFlow
-              key={`${walletScope}:${stageKind}:${roll}:${selected.mint}`}
+              key={`${stageKind}:${roll}:${selected.mint}`}
               token={selected}
               baseChart={
                 tokenChain(selected) !== "solana" ? (
@@ -1574,13 +1816,72 @@ export default function App() {
                 </div>
               </div>
               {tab === "draw" && (
-                <MarketTable
-                  key={walletScope}
-                  data={data}
-                  compactView
-                  onChart={openChart}
-                  pointsLane={"mainnet"}
-                />
+                <>
+                  {data?.filters.includeBondingCurve && (
+                    <JustHootLeaderboardTable
+                      filters={data.filters}
+                      disabled={
+                        phase !== "idle" ||
+                        !!execution?.busy ||
+                        acting ||
+                        configBusy
+                      }
+                      onChart={(entry) => {
+                        const source =
+                          data.pool.find((c) => c.mint === entry.mint) ??
+                          justHootTokenObservations(Date.now()).find(
+                            (t) => t.mint === entry.mint,
+                          );
+                        openChart(entry.mint, entry.symbol, source);
+                      }}
+                      onToggleToken={(key) => {
+                        const currentIncluded =
+                          data.filters.tokenSelection?.included?.length
+                            ? data.filters.tokenSelection.included
+                            : JUSTHOOT_DEFAULT_TOP3_KEYS;
+                        const exists = currentIncluded.includes(key);
+                        const nextIncluded = exists
+                          ? currentIncluded.length <= 2
+                            ? currentIncluded
+                            : currentIncluded.filter((k) => k !== key)
+                          : [...currentIncluded, key];
+                        void configure(ticket, "broad", {
+                          ...data.filters,
+                          chains: ["near"],
+                          includeBondingCurve: true,
+                          poolSize: Math.max(
+                            data.filters.poolSize ?? 12,
+                            nextIncluded.length,
+                          ),
+                          tokenSelection: {
+                            included: nextIncluded,
+                            excluded: [],
+                            manualOnly: true,
+                          },
+                        });
+                      }}
+                      onLoadAll={() => {
+                        void configure(ticket, "broad", {
+                          ...data.filters,
+                          chains: ["near"],
+                          includeBondingCurve: true,
+                          poolSize: Math.max(data.filters.poolSize ?? 12, 12),
+                          tokenSelection: {
+                            included: [...JUSTHOOT_ALL_LEADERBOARD_KEYS],
+                            excluded: [],
+                            manualOnly: true,
+                          },
+                        });
+                      }}
+                    />
+                  )}
+                  <MarketTable
+                    data={data}
+                    compactView
+                    onChart={openChart}
+                    pointsLane={"mainnet"}
+                  />
+                </>
               )}
               <details className="coverage source-details">
                 <summary>
@@ -2105,6 +2406,7 @@ function MarketTable({
   );
 }
 function BaseSource({ token }: { token: TokenObservation }) {
+  const jh = findJustHootEntry(token.mint);
   const chartUrl = dexChartUrl(
     tokenChain(token),
     token.dex?.pool ?? token.firstPoolId ?? "",
@@ -2118,38 +2420,52 @@ function BaseSource({ token }: { token: TokenObservation }) {
             src={token.dex?.icon ?? token.icon}
             size={24}
           />{" "}
-          · {chainName(tokenChain(token))}
+          · {jh ? "JustHoot · NEAR" : chainName(tokenChain(token))}
         </h2>
         <a
           className="text-link"
           target="_blank"
           rel="noreferrer"
           href={
-            "https://dexscreener.com/" +
-            tokenChain(token) +
-            "/" +
-            encodeURIComponent(token.dex?.pool ?? token.mint)
+            jh
+              ? `https://justhoot.fun/token/${token.mint}`
+              : "https://dexscreener.com/" +
+                tokenChain(token) +
+                "/" +
+                encodeURIComponent(token.dex?.pool ?? token.mint)
           }
         >
-          Open source chart ↗
+          {jh ? "Open on JustHoot.fun ↗" : "Open source chart ↗"}
         </a>
       </div>
-      <p>Real source pool data · preview only. No position was opened.</p>
+      <p>
+        {jh
+          ? `JustHoot NEAR launchpad · ${jh.subtitle} · 24h change ${jh.change24h >= 0 ? `+${jh.change24h.toFixed(1)}%` : `${jh.change24h.toFixed(1)}%`} · ${jh.holders} holders.`
+          : "Real source pool data · preview only. No position was opened."}
+      </p>
       <div className="quote-context">
         <div>
           <span>Market cap</span>
-          <strong>{dollars(token.marketCap.value)}</strong>
+          <strong>
+            {jh ? jh.marketCapLabel : dollars(token.marketCap.value)}
+          </strong>
         </div>
         <div>
-          <span>5m volume</span>
-          <strong>{dollars(token.volume5m.value)}</strong>
+          <span>{jh ? "24h volume" : "5m volume"}</span>
+          <strong>
+            {jh ? jh.volume24hLabel : dollars(token.volume5m.value)}
+          </strong>
         </div>
         <div>
-          <span>Liquidity</span>
-          <strong>{dollars(token.liquidity.value)}</strong>
+          <span>{jh ? "Holders" : "Liquidity"}</span>
+          <strong>
+            {jh ? `${jh.holders} (${jh.ageLabel})` : dollars(token.liquidity.value)}
+          </strong>
         </div>
       </div>
-      {chartUrl ? (
+      {jh ? (
+        <JustHootChartView entry={jh} />
+      ) : chartUrl ? (
         <iframe
           className="dex-pair-chart"
           title={`${token.symbol} DEX Screener chart`}
@@ -2162,9 +2478,9 @@ function BaseSource({ token }: { token: TokenObservation }) {
         <p>No supported reference pair is available for this chart.</p>
       )}
       <p className="disclosure">
-        DEX Screener provides this external chart. If embedding is unavailable,
-        use Open source chart. Prices are reference-pool metrics. BNB/Base use
-        GoPlus; NEAR risk checks are not connected.
+        {jh
+          ? "JustHoot · Ref Finance DCL v2 reference data (NEAR Mainnet). Launchpad bonding-curve and hatched pools are screened by JustHoot room status rather than GoPlus EVM checks."
+          : "DEX Screener provides this external chart. If embedding is unavailable, use Open source chart. Prices are reference-pool metrics. BNB/Base use GoPlus; NEAR risk checks are not connected."}
       </p>
     </section>
   );

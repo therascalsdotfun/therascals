@@ -33,6 +33,7 @@ const keys = [
 ] as const satisfies readonly (keyof FilterSpec)[];
 export const FILTER_CODE_LIMIT = 65536;
 const optionalNumbers = [
+  "maxAgeMinutes",
   "maxLiquidity",
   "maxVolume5m",
   "maxBuys5m",

@@ -269,7 +269,7 @@ export function CommunityPresets({
           <div className="publish-summary">
             <span className="summary-title">Summary of shared rules:</span>
             <ul className="summary-rules">
-              <li>- Cage size: {currentFilters.poolSize ?? 8} coins</li>
+              <li>- Cage size: {currentFilters.minPoolSize ?? 2}–{currentFilters.maxPoolSize ?? currentFilters.poolSize ?? 8} coins</li>
               <li>- Chains: {currentFilters.chains?.join(", ") || "solana"}</li>
               <li>- Min liquidity: {currentFilters.minLiquidity ? `$${currentFilters.minLiquidity.toLocaleString()}` : "Any"}</li>
               <li>- Max market cap: {currentFilters.maxMarketCap ? `$${currentFilters.maxMarketCap.toLocaleString()}` : "Any"}</li>
@@ -412,7 +412,7 @@ export function CommunityPresets({
                     <div className="preset-rules-drawer">
                       <span className="drawer-title">Rule Details:</span>
                       <ul className="drawer-list">
-                        <li>Pool: {expandedRules.poolSize ?? 8} coins ({expandedRules.chains?.join(", ") || "solana"})</li>
+                        <li>Pool: {expandedRules.minPoolSize ?? 2}–{expandedRules.maxPoolSize ?? expandedRules.poolSize ?? 8} coins ({expandedRules.chains?.join(", ") || "solana"})</li>
                         {expandedRules.minLiquidity ? <li>Min Liq: ${expandedRules.minLiquidity.toLocaleString()}</li> : null}
                         {expandedRules.maxMarketCap ? <li>Max MCap: ${expandedRules.maxMarketCap.toLocaleString()}</li> : null}
                         {expandedRules.minAgeMinutes ? <li>Min Age: {expandedRules.minAgeMinutes}m</li> : null}
