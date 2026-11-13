@@ -21,6 +21,16 @@ import {
 
 export type JustHootToken = JustHootPanelToken;
 
+export function daoAssetUrl(
+  path: string | undefined,
+  baseUrl = import.meta.env.BASE_URL || "/",
+): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  return `${normalizedBase}${path.replace(/^\/+/, "")}`;
+}
+
 const DEFAULT_JUSTHOOT_TOKENS: JustHootToken[] = [
   {
     id: "hoot-8ecf65.launchpad.justhoot.near",
@@ -269,7 +279,7 @@ export function JustHootPanel({
       <div className="justhoot-hero">
         <div className="justhoot-brand">
           <img
-            src="/brands/justhoot/logo.png"
+            src={daoAssetUrl("brands/justhoot/logo.png")}
             alt="JustHoot"
             className="justhoot-logo-img"
           />
@@ -349,7 +359,7 @@ export function JustHootPanel({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               {winner.icon ? (
-                <img src={winner.icon} alt="" width={44} height={44} style={{ borderRadius: "50%" }} />
+                <img src={daoAssetUrl(winner.icon)} alt="" width={44} height={44} style={{ borderRadius: "50%" }} />
               ) : (
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#4b367c", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
                   {winner.symbol.slice(0, 2)}

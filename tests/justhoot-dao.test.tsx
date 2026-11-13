@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { JustHootPanel } from "../apps/dao/src/ui/JustHootPanel.tsx";
+import { JustHootPanel, daoAssetUrl } from "../apps/dao/src/ui/JustHootPanel.tsx";
 import {
   SputnikDaoPanel,
   SputnikSummaryBanner,
@@ -308,5 +308,20 @@ describe("JustHoot DAO panel & bonding curve integration", () => {
       change24h: -2.5,
       holders: 901,
     });
+  });
+
+  it("prefixes JustHoot brand and token asset URLs with DAO BASE_URL", () => {
+    expect(daoAssetUrl("brands/justhoot/logo.png", "/dao/")).toBe(
+      "/dao/brands/justhoot/logo.png",
+    );
+    expect(daoAssetUrl("/brands/justhoot/tokens/hoot.webp", "/dao/")).toBe(
+      "/dao/brands/justhoot/tokens/hoot.webp",
+    );
+    expect(daoAssetUrl("/brands/justhoot/tokens/hoot.webp", "/")).toBe(
+      "/brands/justhoot/tokens/hoot.webp",
+    );
+    expect(daoAssetUrl("https://cdn.example/icon.png", "/dao/")).toBe(
+      "https://cdn.example/icon.png",
+    );
   });
 });
